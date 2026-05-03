@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Focus — Task Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #111010;
+    --surface: #1a1918;
+    --surface-2: #222120;
+    --border: #2e2c2a;
+    --border-light: #3a3835;
+    --text: #e8e4df;
+    --text-muted: #7a756e;
+    --text-dim: #4a4540;
+    --accent: #c8a97e;
+    --accent-soft: rgba(200, 169, 126, 0.12);
+    --done-color: #5a7a5a;
+    --half-color: #7a6a4a;
+    --radius: 10px;
+    --mono: 'DM Mono', monospace;
+    --serif: 'Instrument Serif', Georgia, serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+  }
+
+  /* Top bar */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    background: rgba(17,16,16,0.92);
+    backdrop-filter: blur(12px);
+    z-index: 100;
+  }
+
+  .logo {
+    font-family: var(--serif);
+    font-size: 20px;
+    font-style: italic;
+    color: var(--accent);
+    letter-spacing: 0.02em;
+  }
+
+  .topbar-right {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .kbd {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--text-muted);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 3px 7px;
+    letter-spacing: 0.05em;
+  }
+
+  .date-display {
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .add-section-btn {
+    background: var(--accent-soft);
+    border: 1px solid rgba(200,169,126,0.25);
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 5px 12px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    letter-spacing: 0.05em;
+  }
+  .add-section-btn:hover {
+    background: rgba(200,169,126,0.2);
+    border-color: rgba(200,169,126,0.4);
+  }
+
+  /* Main layout */
+  .board {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 16px;
+    padding: 24px;
+    flex: 1;
+  }
+
+  /* Section cards */
+  .section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    display: flex;
+    flex-direction: column;
+    min-height: 180px;
+    transition: border-color 0.2s ease;
+    animation: fadeUp 0.25s ease both;
+  }
+  .section:hover { border-color: var(--border-light); }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 16px 10px;
+    border-bottom: 1px solid var(--border);
+    gap: 8px;
+  }
+
+  .section-title-input {
+    background: none;
+    border: none;
+    color: var(--text);
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 16px;
+    flex: 1;
+    outline: none;
+    min-width: 0;
+  }
+  .section-title-input::placeholder { color: var(--text-dim); }
+
+  .section-meta {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .progress-pill {
+    font-size: 10px;
+    color: var(--text-muted);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 2px 8px;
+    white-space: nowrap;
+    letter-spacing: 0.04em;
+    transition: all 0.2s ease;
+  }
+
+  .section-menu-btn {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: color 0.15s;
+    line-height: 1;
+  }
+  .section-menu-btn:hover { color: var(--text-muted); }
+
+  /* Task list */
+  .task-list {
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    flex: 1;
+  }
+
+  .task-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 5px 6px;
+    border-radius: 6px;
+    transition: background 0.12s ease;
+    position: relative;
+    group: true;
+  }
+  .task-item:hover { background: var(--surface-2); }
+
+  /* Three-state checkbox */
+  .task-checkbox {
+    width: 16px;
+    height: 16px;
+    border: 1.5px solid var(--border-light);
+    border-radius: 4px;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-top: 1px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+    position: relative;
+    background: none;
+    user-select: none;
+    font-size: 9px;
+  }
+
+  .task-checkbox[data-state="none"] { border-color: var(--border-light); }
+  .task-checkbox[data-state="none"]:hover { border-color: var(--text-muted); }
+
+  .task-checkbox[data-state="half"] {
+    border-color: var(--half-color);
+    background: rgba(122, 106, 74, 0.15);
+    color: var(--half-color);
+  }
+  .task-checkbox[data-state="half"]::after {
+    content: '–';
+    font-weight: 700;
+    font-size: 11px;
+    line-height: 1;
+    color: var(--half-color);
+  }
+
+  .task-checkbox[data-state="done"] {
+    border-color: var(--done-color);
+    background: rgba(90, 122, 90, 0.18);
+  }
+  .task-checkbox[data-state="done"]::after {
+    content: '✓';
+    font-size: 9px;
+    color: var(--done-color);
+  }
+
+  .task-content {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .task-text-input {
+    background: none;
+    border: none;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 12.5px;
+    outline: none;
+    width: 100%;
+    line-height: 1.5;
+    transition: color 0.15s ease;
+  }
+  .task-text-input::placeholder { color: var(--text-dim); }
+  .task-text-input[data-state="done"] {
+    color: var(--text-dim);
+    text-decoration: line-through;
+    text-decoration-color: var(--text-dim);
+  }
+  .task-text-input[data-state="half"] {
+    color: var(--text-muted);
+  }
+
+  .task-note-input {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 11px;
+    font-style: italic;
+    outline: none;
+    width: 100%;
+    line-height: 1.4;
+    display: none;
+  }
+  .task-note-input.visible { display: block; }
+  .task-note-input::placeholder { color: var(--text-dim); font-style: italic; }
+
+  .task-actions {
+    display: flex;
+    gap: 2px;
+    opacity: 0;
+    transition: opacity 0.12s ease;
+    align-items: flex-start;
+    margin-top: 1px;
+  }
+  .task-item:hover .task-actions { opacity: 1; }
+
+  .task-action-btn {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 13px;
+    padding: 2px 4px;
+    border-radius: 3px;
+    transition: color 0.12s;
+    line-height: 1;
+  }
+  .task-action-btn:hover { color: var(--text-muted); }
+
+  /* Sub-tasks */
+  .subtask-list {
+    padding-left: 26px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-top: 2px;
+  }
+
+  .subtask-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 6px;
+    border-radius: 5px;
+    transition: background 0.12s;
+  }
+  .subtask-item:hover { background: var(--surface-2); }
+
+  .subtask-dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--border-light);
+    flex-shrink: 0;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .subtask-dot[data-done="true"] { background: var(--done-color); }
+
+  .subtask-input {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 11.5px;
+    outline: none;
+    flex: 1;
+  }
+  .subtask-input[data-done="true"] {
+    text-decoration: line-through;
+    color: var(--text-dim);
+  }
+  .subtask-input::placeholder { color: var(--text-dim); }
+
+  /* Add task row */
+  .add-task-row {
+    padding: 6px 12px 12px;
+  }
+
+  .add-task-btn {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-family: var(--mono);
+    font-size: 11.5px;
+    padding: 5px 6px;
+    border-radius: 5px;
+    transition: all 0.12s;
+    background: none;
+    border: none;
+    width: 100%;
+    text-align: left;
+    letter-spacing: 0.03em;
+  }
+  .add-task-btn:hover {
+    color: var(--text-muted);
+    background: var(--surface-2);
+  }
+
+  /* Progress bar on section */
+  .section-progress-bar {
+    height: 2px;
+    background: var(--border);
+    border-radius: 0 0 var(--radius) var(--radius);
+    overflow: hidden;
+    margin-top: auto;
+  }
+  .section-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--done-color), #7ab07a);
+    border-radius: 2px;
+    transition: width 0.4s ease;
+  }
+
+  /* Summary bar */
+  .summary-bar {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 10px 24px;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+  }
+  .summary-bar span { display: flex; align-items: center; gap: 6px; }
+  .summary-dot {
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  /* Modal for "what's remaining" note */
+  .partial-badge {
+    font-size: 9px;
+    background: rgba(122,106,74,0.2);
+    border: 1px solid rgba(122,106,74,0.3);
+    color: var(--half-color);
+    border-radius: 3px;
+    padding: 1px 5px;
+    white-space: nowrap;
+    margin-top: 2px;
+    cursor: pointer;
+    display: inline-block;
+  }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* Empty state */
+  .empty-board {
+    grid-column: 1 / -1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 20px;
+    color: var(--text-dim);
+    gap: 12px;
+    text-align: center;
+  }
+  .empty-board .big-hint {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 22px;
+    color: var(--text-muted);
+  }
+  .empty-board p { font-size: 12px; line-height: 1.7; max-width: 300px; }
+
+  /* Drag hint */
+  .section[data-dragging="true"] {
+    opacity: 0.5;
+    border-style: dashed;
+  }
+
+  /* Focus mode pulse */
+  @keyframes softPulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(200,169,126,0); }
+    50% { box-shadow: 0 0 0 3px rgba(200,169,126,0.08); }
+  }
+  .section:focus-within {
+    border-color: rgba(200,169,126,0.3);
+    animation: softPulse 2s ease infinite;
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="logo">focus.</span>
+  <div class="topbar-right">
+    <span class="date-display" id="dateDisplay"></span>
+    <span class="kbd">⌥ Space</span>
+    <button class="add-section-btn" onclick="addSection()">+ section</button>
+  </div>
+</div>
+
+<div class="board" id="board">
+  <div class="empty-board" id="emptyState">
+    <div class="big-hint">your work, in sections.</div>
+    <p>Think of each section as a slice of your world — one per domain, project, or context. Tasks live inside them, not in a pipeline.</p>
+    <button class="add-section-btn" style="margin-top:8px" onclick="addSection()">create your first section</button>
+  </div>
+</div>
+
+<div class="summary-bar" id="summaryBar" style="display:none">
+  <span><span class="summary-dot" style="background:var(--done-color)"></span><span id="summDone">0 done</span></span>
+  <span><span class="summary-dot" style="background:var(--half-color)"></span><span id="summHalf">0 partial</span></span>
+  <span><span class="summary-dot" style="background:var(--border-light)"></span><span id="summOpen">0 open</span></span>
+</div>
+
+<script>
+// ── State ──────────────────────────────────────────────────────────────
+let sections = [];
+
+function uid() {
+  return Math.random().toString(36).slice(2, 9);
+}
+
+// ── Date ──────────────────────────────────────────────────────────────
+function updateDate() {
+  const d = new Date();
+  const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  document.getElementById('dateDisplay').textContent =
+    `${days[d.getDay()]} ${months[d.getMonth()]} ${d.getDate()}`;
+}
+updateDate();
+
+// ── Add Section ────────────────────────────────────────────────────────
+function addSection(title = '', tasks = []) {
+  const id = uid();
+  const section = { id, title, tasks };
+  sections.push(section);
+  renderSection(section);
+  updateEmptyState();
+  updateSummary();
+  return id;
+}
+
+// ── Add Task ──────────────────────────────────────────────────────────
+function addTask(sectionId, text = '', state = 'none', note = '', subtasks = []) {
+  const sec = sections.find(s => s.id === sectionId);
+  if (!sec) return;
+  const task = { id: uid(), text, state, note, subtasks: subtasks.map(st => ({
+    id: uid(), text: st.text || st, done: st.done || false
+  }))};
+  sec.tasks.push(task);
+  renderTask(sectionId, task);
+  updateProgress(sectionId);
+  updateSummary();
+  return task.id;
+}
+
+// ── Render Section ────────────────────────────────────────────────────
+function renderSection(section) {
+  const board = document.getElementById('board');
+
+  const el = document.createElement('div');
+  el.className = 'section';
+  el.dataset.id = section.id;
+  el.innerHTML = `
+    <div class="section-header">
+      <input class="section-title-input" placeholder="section name…"
+             value="${escHtml(section.title)}"
+             onchange="updateSectionTitle('${section.id}', this.value)"
+             oninput="updateSectionTitle('${section.id}', this.value)">
+      <div class="section-meta">
+        <span class="progress-pill" id="pill-${section.id}">0 / 0</span>
+        <button class="section-menu-btn" onclick="removeSection('${section.id}')" title="Remove section">×</button>
+      </div>
+    </div>
+    <div class="task-list" id="tasks-${section.id}"></div>
+    <div class="add-task-row">
+      <button class="add-task-btn" onclick="addTask('${section.id}')">
+        <span style="font-size:14px;line-height:1">+</span> add task
+      </button>
+    </div>
+    <div class="section-progress-bar">
+      <div class="section-progress-fill" id="prog-${section.id}" style="width:0%"></div>
+    </div>
+  `;
+
+  board.appendChild(el);
+
+  // Render existing tasks
+  section.tasks.forEach(t => renderTask(section.id, t));
+
+  // Auto-focus title if empty
+  if (!section.title) {
+    setTimeout(() => el.querySelector('.section-title-input').focus(), 50);
+  }
+}
+
+// ── Render Task ───────────────────────────────────────────────────────
+function renderTask(sectionId, task) {
+  const list = document.getElementById(`tasks-${sectionId}`);
+  if (!list) return;
+
+  const el = document.createElement('div');
+  el.className = 'task-item';
+  el.dataset.id = task.id;
+  el.dataset.section = sectionId;
+
+  const hasNote = task.note && task.note.trim();
+  const noteVisible = hasNote ? 'visible' : '';
+
+  el.innerHTML = `
+    <div class="task-checkbox" data-state="${task.state}" data-id="${task.id}"
+         onclick="cycleState('${sectionId}', '${task.id}', this)"></div>
+    <div class="task-content">
+      <input class="task-text-input" data-state="${task.state}"
+             value="${escHtml(task.text)}" placeholder="task…"
+             onchange="updateTaskText('${sectionId}','${task.id}',this.value)"
+             onkeydown="taskKeydown(event,'${sectionId}','${task.id}')">
+      <input class="task-note-input ${noteVisible}"
+             value="${escHtml(task.note || '')}"
+             placeholder="what's remaining…"
+             data-id="${task.id}"
+             onchange="updateTaskNote('${sectionId}','${task.id}',this.value)">
+      <div class="subtask-list" id="subtasks-${task.id}"></div>
+    </div>
+    <div class="task-actions">
+      <button class="task-action-btn" onclick="toggleNote('${task.id}')" title="Add note">≡</button>
+      <button class="task-action-btn" onclick="addSubtask('${sectionId}','${task.id}')" title="Add sub-task">⊕</button>
+      <button class="task-action-btn" onclick="removeTask('${sectionId}','${task.id}')" title="Remove">×</button>
+    </div>
+  `;
+
+  list.appendChild(el);
+
+  // Render subtasks
+  task.subtasks.forEach(st => renderSubtask(task.id, st, sectionId));
+
+  // Auto-focus text if empty
+  if (!task.text) {
+    setTimeout(() => el.querySelector('.task-text-input').focus(), 30);
+  }
+}
+
+// ── Render Subtask ────────────────────────────────────────────────────
+function renderSubtask(taskId, subtask, sectionId) {
+  const list = document.getElementById(`subtasks-${taskId}`);
+  if (!list) return;
+
+  const el = document.createElement('div');
+  el.className = 'subtask-item';
+  el.dataset.id = subtask.id;
+
+  el.innerHTML = `
+    <div class="subtask-dot" data-done="${subtask.done}"
+         onclick="toggleSubtask('${sectionId}','${taskId}','${subtask.id}',this)"></div>
+    <input class="subtask-input" data-done="${subtask.done}"
+           value="${escHtml(subtask.text)}" placeholder="sub-task…"
+           onchange="updateSubtaskText('${sectionId}','${taskId}','${subtask.id}',this.value)"
+           onkeydown="subtaskKeydown(event,'${sectionId}','${taskId}','${subtask.id}')">
+  `;
+
+  list.appendChild(el);
+  if (!subtask.text) setTimeout(() => el.querySelector('.subtask-input').focus(), 30);
+}
+
+// ── Cycle State: none → half → done → none ────────────────────────────
+function cycleState(sectionId, taskId, checkbox) {
+  const states = ['none', 'half', 'done'];
+  const current = checkbox.dataset.state;
+  const next = states[(states.indexOf(current) + 1) % states.length];
+
+  checkbox.dataset.state = next;
+
+  // Update task object
+  const sec = sections.find(s => s.id === sectionId);
+  const task = sec?.tasks.find(t => t.id === taskId);
+  if (task) task.state = next;
+
+  // Update text input style
+  const textInput = checkbox.closest('.task-item').querySelector('.task-text-input');
+  textInput.dataset.state = next;
+
+  // Show/hide note field for partial
+  const noteInput = checkbox.closest('.task-item').querySelector('.task-note-input');
+  if (next === 'half') {
+    noteInput.classList.add('visible');
+    setTimeout(() => noteInput.focus(), 20);
+  }
+
+  updateProgress(sectionId);
+  updateSummary();
+}
+
+// ── Toggle note visibility ────────────────────────────────────────────
+function toggleNote(taskId) {
+  const noteInput = document.querySelector(`.task-note-input[data-id="${taskId}"]`);
+  if (noteInput) {
+    noteInput.classList.toggle('visible');
+    if (noteInput.classList.contains('visible')) noteInput.focus();
+  }
+}
+
+// ── Subtask toggle ────────────────────────────────────────────────────
+function toggleSubtask(sectionId, taskId, subtaskId, dot) {
+  const done = dot.dataset.done === 'true';
+  dot.dataset.done = !done;
+  const input = dot.nextElementSibling;
+  input.dataset.done = !done;
+
+  const sec = sections.find(s => s.id === sectionId);
+  const task = sec?.tasks.find(t => t.id === taskId);
+  const st = task?.subtasks.find(s => s.id === subtaskId);
+  if (st) st.done = !done;
+
+  updateProgress(sectionId);
+  updateSummary();
+}
+
+// ── Add subtask ───────────────────────────────────────────────────────
+function addSubtask(sectionId, taskId) {
+  const sec = sections.find(s => s.id === sectionId);
+  const task = sec?.tasks.find(t => t.id === taskId);
+  if (!task) return;
+  const st = { id: uid(), text: '', done: false };
+  task.subtasks.push(st);
+  renderSubtask(taskId, st, sectionId);
+}
+
+// ── Keyboard nav ──────────────────────────────────────────────────────
+function taskKeydown(e, sectionId, taskId) {
+  if (e.key === 'Enter') { e.preventDefault(); addTask(sectionId); }
+  if (e.key === 'Backspace' && e.target.value === '') {
+    e.preventDefault(); removeTask(sectionId, taskId);
+  }
+}
+
+function subtaskKeydown(e, sectionId, taskId, subtaskId) {
+  if (e.key === 'Enter') { e.preventDefault(); addSubtask(sectionId, taskId); }
+  if (e.key === 'Backspace' && e.target.value === '') {
+    e.preventDefault(); removeSubtask(sectionId, taskId, subtaskId);
+  }
+}
+
+// ── Remove helpers ────────────────────────────────────────────────────
+function removeTask(sectionId, taskId) {
+  const sec = sections.find(s => s.id === sectionId);
+  if (!sec) return;
+  sec.tasks = sec.tasks.filter(t => t.id !== taskId);
+  document.querySelector(`.task-item[data-id="${taskId}"]`)?.remove();
+  updateProgress(sectionId);
+  updateSummary();
+}
+
+function removeSubtask(sectionId, taskId, subtaskId) {
+  const sec = sections.find(s => s.id === sectionId);
+  const task = sec?.tasks.find(t => t.id === taskId);
+  if (!task) return;
+  task.subtasks = task.subtasks.filter(s => s.id !== subtaskId);
+  document.querySelector(`.subtask-item[data-id="${subtaskId}"]`)?.remove();
+}
+
+function removeSection(sectionId) {
+  sections = sections.filter(s => s.id !== sectionId);
+  document.querySelector(`.section[data-id="${sectionId}"]`)?.remove();
+  updateEmptyState();
+  updateSummary();
+}
+
+// ── Update helpers ────────────────────────────────────────────────────
+function updateSectionTitle(sectionId, val) {
+  const sec = sections.find(s => s.id === sectionId);
+  if (sec) sec.title = val;
+}
+
+function updateTaskText(sectionId, taskId, val) {
+  const sec = sections.find(s => s.id === sectionId);
+  const task = sec?.tasks.find(t => t.id === taskId);
+  if (task) task.text = val;
+}
+
+function updateTaskNote(sectionId, taskId, val) {
+  const sec = sections.find(s => s.id === sectionId);
+  const task = sec?.tasks.find(t => t.id === taskId);
+  if (task) task.note = val;
+}
+
+function updateSubtaskText(sectionId, taskId, subtaskId, val) {
+  const sec = sections.find(s => s.id === sectionId);
+  const task = sec?.tasks.find(t => t.id === taskId);
+  const st = task?.subtasks.find(s => s.id === subtaskId);
+  if (st) st.text = val;
+}
+
+// ── Progress ──────────────────────────────────────────────────────────
+function updateProgress(sectionId) {
+  const sec = sections.find(s => s.id === sectionId);
+  if (!sec) return;
+  const total = sec.tasks.length;
+  const done = sec.tasks.filter(t => t.state === 'done').length;
+  const half = sec.tasks.filter(t => t.state === 'half').length;
+
+  document.getElementById(`pill-${sectionId}`).textContent =
+    `${done}${half ? ` + ${half}~` : ''} / ${total}`;
+
+  const pct = total === 0 ? 0 : ((done + half * 0.5) / total) * 100;
+  document.getElementById(`prog-${sectionId}`).style.width = pct + '%';
+}
+
+function updateSummary() {
+  let done = 0, half = 0, open = 0;
+  sections.forEach(sec => {
+    sec.tasks.forEach(t => {
+      if (t.state === 'done') done++;
+      else if (t.state === 'half') half++;
+      else open++;
+    });
+  });
+
+  const bar = document.getElementById('summaryBar');
+  const total = done + half + open;
+  bar.style.display = total > 0 ? 'flex' : 'none';
+
+  document.getElementById('summDone').textContent = `${done} done`;
+  document.getElementById('summHalf').textContent = `${half} partial`;
+  document.getElementById('summOpen').textContent = `${open} open`;
+}
+
+function updateEmptyState() {
+  const empty = document.getElementById('emptyState');
+  if (empty) empty.style.display = sections.length === 0 ? 'flex' : 'none';
+}
+
+function escHtml(str) {
+  return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Keyboard shortcut simulation (⌥Space) ────────────────────────────
+document.addEventListener('keydown', e => {
+  if (e.altKey && e.code === 'Space') {
+    e.preventDefault();
+    document.body.style.animation = 'none';
+    document.body.offsetHeight; // reflow
+    // In a real app this would toggle visibility
+  }
+  if (e.key === 'n' && (e.metaKey || e.ctrlKey)) {
+    e.preventDefault();
+    addSection();
+  }
+});
+
+// ── Seed with example ─────────────────────────────────────────────────
+(function seed() {
+  const s1 = addSection('Operations');
+  addTask(s1, 'Review vendor contracts', 'done', '');
+  addTask(s1, 'Update team handbook', 'half', 'missing onboarding section');
+  addTask(s1, 'Schedule Q2 retro', 'none', '');
+
+  const s2 = addSection('Product');
+  const t1 = addTask(s2, 'Write PRD for v2 feature', 'half', 'needs eng review');
+  addSubtask(s2, t1, );  // won't work like this, let's do it properly
+
+  const s3 = addSection('People');
+  addTask(s3, '1:1s this week', 'none', '');
+  addTask(s3, 'Feedback for mid-cycle review', 'half', '3 of 5 written');
+  addTask(s3, 'Async update to leadership', 'done');
+
+  // Fix product section
+  const sec2 = sections.find(s => s.id === s2);
+  if (sec2) {
+    const taskId = sec2.tasks[0]?.id;
+    if (taskId) {
+      const stEl = { id: uid(), text: 'Define acceptance criteria', done: true };
+      const stEl2 = { id: uid(), text: 'Diagram user flow', done: false };
+      sec2.tasks[0].subtasks = [stEl, stEl2];
+      const subList = document.getElementById(`subtasks-${taskId}`);
+      if (subList) {
+        [stEl, stEl2].forEach(st => renderSubtask(taskId, st, s2));
+      }
+    }
+    addTask(s2, 'Align on roadmap priority', 'none');
+    updateProgress(s2);
+  }
+
+  updateSummary();
+})();
+</script>
+</body>
+</html>
