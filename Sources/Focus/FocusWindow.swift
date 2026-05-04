@@ -1,6 +1,11 @@
 import Cocoa
 import WebKit
 
+private class KeyableWindow: NSWindow {
+    override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { true }
+}
+
 class FocusWindow: NSObject, WKNavigationDelegate {
     private var window: NSWindow!
     private var webView: WKWebView!
@@ -16,7 +21,7 @@ class FocusWindow: NSObject, WKNavigationDelegate {
         let width: CGFloat = 920
         let height: CGFloat = 600
 
-        window = NSWindow(
+        window = KeyableWindow(
             contentRect: NSRect(x: 0, y: 0, width: width, height: height),
             styleMask: [.borderless, .fullSizeContentView],
             backing: .buffered,
@@ -74,6 +79,7 @@ class FocusWindow: NSObject, WKNavigationDelegate {
 
         window.alphaValue = 0
         window.makeKeyAndOrderFront(nil)
+        window.makeFirstResponder(webView)
         NSApp.activate(ignoringOtherApps: true)
 
         NSAnimationContext.runAnimationGroup { ctx in

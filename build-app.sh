@@ -9,11 +9,13 @@ fi
 
 SIGN=false
 MAS=false
+DEV=false
 
 for arg in "$@"; do
   case $arg in
     --sign) SIGN=true ;;
     --mas)  MAS=true ;;
+    --dev)  DEV=true ;;
   esac
 done
 
@@ -67,6 +69,13 @@ EOENT
 </plist>
 EOENT
 }
+
+# ── Dev run ────────────────────────────────────────────────────────────
+if [ "$DEV" = true ]; then
+  echo "==> Building and running Focus (dev)..."
+  swift build -c release
+  exec .build/release/Focus
+fi
 
 # ── Build ──────────────────────────────────────────────────────────────
 echo "==> Building Focus..."
