@@ -172,10 +172,10 @@
   }
 
   .board {
-    columns: 270px;
-    column-fill: auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
     gap: 14px;
-    height: 100%;
+    align-content: start;
   }
 
   /* Section cards */
@@ -517,7 +517,7 @@
 
   /* Empty state */
   .empty-board {
-    column-span: all;
+    grid-column: 1 / -1;
     display: flex;
     flex-direction: column;
     align-items: center;
