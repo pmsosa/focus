@@ -1200,6 +1200,57 @@
 let sections = [];
 let todayItems = []; // [{taskId, sectionId, addedDate: 'YYYY-MM-DD'}]
 
+// ── Undo / Redo ────────────────────────────────────────────────────────
+const UNDO_MAX = 20;
+let undoStack = [];
+let redoStack = [];
+
+function takeSnapshot() {
+  undoStack.push(JSON.stringify({ sections, todayItems }));
+  if (undoStack.length > UNDO_MAX) undoStack.shift();
+  redoStack = [];
+}
+
+function fullRerender() {
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+  const emptyDiv = document.createElement('div');
+  emptyDiv.className = 'empty-board';
+  emptyDiv.id = 'emptyState';
+  emptyDiv.innerHTML = `
+    <div class="big-hint">your work, in sections.</div>
+    <p>Each section is a slice of your world — one per domain or context. Tasks live inside, not in a pipeline.</p>
+    <button class="add-section-btn" style="margin-top:8px" onclick="addSection()">create your first section</button>
+  `;
+  board.appendChild(emptyDiv);
+  sections.forEach(s => renderSection(s));
+  updateEmptyState();
+  updateSummary();
+  rerenderTodayPanel();
+  syncAllTodayIndicators();
+}
+
+document.addEventListener('keydown', e => {
+  if (!(e.metaKey || e.ctrlKey)) return;
+  if (e.key === 'z' && !e.shiftKey && undoStack.length > 0) {
+    e.preventDefault();
+    redoStack.push(JSON.stringify({ sections, todayItems }));
+    const snap = JSON.parse(undoStack.pop());
+    sections = snap.sections;
+    todayItems = snap.todayItems;
+    fullRerender();
+    save();
+  } else if ((e.key === 'z' && e.shiftKey || e.key === 'y') && redoStack.length > 0) {
+    e.preventDefault();
+    undoStack.push(JSON.stringify({ sections, todayItems }));
+    const snap = JSON.parse(redoStack.pop());
+    sections = snap.sections;
+    todayItems = snap.todayItems;
+    fullRerender();
+    save();
+  }
+});
+
 function uid() {
   return Math.random().toString(36).slice(2, 9);
 }
@@ -1514,6 +1565,7 @@ function isInToday(taskId) {
 
 function addToToday(sectionId, taskId) {
   if (isInToday(taskId)) return;
+  takeSnapshot();
   todayItems.push({ taskId, sectionId, addedDate: todayStr() });
   syncTodayIndicator(taskId, true);
   rerenderTodayPanel();
@@ -1521,6 +1573,7 @@ function addToToday(sectionId, taskId) {
 }
 
 function removeFromToday(taskId) {
+  takeSnapshot();
   todayItems = todayItems.filter(ti => ti.taskId !== taskId);
   syncTodayIndicator(taskId, false);
   rerenderTodayPanel();
@@ -1683,6 +1736,7 @@ function setTaskState(sectionId, taskId, checkbox, next) {
 }
 
 function cycleState(sectionId, taskId, checkbox) {
+  takeSnapshot();
   const next = checkbox.dataset.state === 'done' ? 'none' : 'done';
   setTaskState(sectionId, taskId, checkbox, next);
 }
@@ -1690,6 +1744,7 @@ function cycleState(sectionId, taskId, checkbox) {
 function cycleStatePartial(e, sectionId, taskId, checkbox) {
   e.preventDefault();
   e.stopPropagation();
+  takeSnapshot();
   const next = checkbox.dataset.state === 'half' ? 'none' : 'half';
   setTaskState(sectionId, taskId, checkbox, next);
 }
@@ -1871,6 +1926,7 @@ function subtaskKeydown(e, sectionId, taskId, subtaskId) {
 
 // ── Remove ────────────────────────────────────────────────────────────
 function removeTask(sectionId, taskId) {
+  takeSnapshot();
   const sec = sections.find(s => s.id === sectionId);
   if (!sec) return;
   sec.tasks = sec.tasks.filter(t => t.id !== taskId);
@@ -1882,6 +1938,7 @@ function removeTask(sectionId, taskId) {
 }
 
 function removeSubtask(sectionId, taskId, subtaskId) {
+  takeSnapshot();
   const sec = sections.find(s => s.id === sectionId);
   const task = sec?.tasks.find(t => t.id === taskId);
   if (!task) return;
@@ -1891,6 +1948,7 @@ function removeSubtask(sectionId, taskId, subtaskId) {
 }
 
 function removeSection(sectionId) {
+  takeSnapshot();
   const sec = sections.find(s => s.id === sectionId);
   if (sec) sec.tasks.forEach(t => { if (isInToday(t.id)) removeFromToday(t.id); });
   sections = sections.filter(s => s.id !== sectionId);
