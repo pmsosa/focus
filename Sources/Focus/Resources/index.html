@@ -264,6 +264,19 @@
     flex-shrink: 0;
   }
   .collapse-btn:hover { color: var(--text-muted); }
+  .color-dot-btn {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 1px solid var(--border-light);
+    background: transparent;
+    cursor: pointer;
+    padding: 0;
+    flex-shrink: 0;
+    transition: border-color 0.15s, transform 0.1s;
+  }
+  .color-dot-btn:hover { transform: scale(1.25); }
+  .color-dot-btn.has-color { border: none; }
   .section.section-collapsed { min-height: 0; }
   .section.section-collapsed .section-header { border-bottom: none; }
 
@@ -1219,6 +1232,8 @@
 let sections = [];
 let todayItems = []; // [{taskId, sectionId, addedDate: 'YYYY-MM-DD'}]
 
+const SECTION_COLORS = [null, '#c8a97e', '#7ab07a', '#7a9ab0', '#b07a9a', '#b0a07a', '#7ab0a0', '#b08a7a'];
+
 // ── Undo / Redo ────────────────────────────────────────────────────────
 const UNDO_MAX = 20;
 let undoStack = [];
@@ -1627,9 +1642,21 @@ function applyCollapse(sectionId, collapsed) {
   el.classList.toggle('section-collapsed', collapsed);
 }
 
+function cycleSectionColor(sectionId) {
+  const sec = sections.find(s => s.id === sectionId);
+  if (!sec) return;
+  takeSnapshot();
+  const idx = SECTION_COLORS.indexOf(sec.color ?? null);
+  sec.color = SECTION_COLORS[(idx + 1) % SECTION_COLORS.length];
+  const btn = document.getElementById(`cdot-${sectionId}`);
+  btn.style.background = sec.color || 'transparent';
+  btn.classList.toggle('has-color', !!sec.color);
+  save();
+}
+
 function addSection(title = '') {
   const id = uid();
-  const section = { id, title, tasks: [], collapsed: false };
+  const section = { id, title, tasks: [], collapsed: false, color: null };
   sections.push(section);
   renderSection(section);
   updateEmptyState();
@@ -1663,6 +1690,9 @@ function renderSection(section) {
   el.innerHTML = `
     <div class="section-header">
       <button class="collapse-btn" onclick="toggleCollapse('${section.id}')">▾</button>
+      <button class="color-dot-btn ${section.color ? 'has-color' : ''}" id="cdot-${section.id}"
+              onclick="cycleSectionColor('${section.id}')"
+              style="background:${section.color || 'transparent'}"></button>
       <input class="section-title-input" placeholder="section name…"
              value="${escHtml(section.title)}"
              oninput="updateSectionTitle('${section.id}', this.value)">
