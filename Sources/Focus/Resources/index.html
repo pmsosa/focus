@@ -1024,6 +1024,26 @@
     font-style: italic;
   }
 
+  /* ── Toast ─────────────────────────────────────────────────────────── */
+  .toast {
+    position: fixed;
+    bottom: 36px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--surface-2);
+    border: 1px solid var(--border-light);
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 6px 14px;
+    border-radius: 20px;
+    pointer-events: none;
+    z-index: 9999;
+    letter-spacing: 0.05em;
+    transition: opacity 0.2s ease;
+  }
+  .toast.fade-out { opacity: 0; }
+
   /* ── Dev log ───────────────────────────────────────────────────────── */
   .dev-log-actions {
     display: flex;
@@ -1088,6 +1108,12 @@
   <span class="logo">focus.</span>
   <div class="topbar-right">
     <span class="date-display" id="dateDisplay"></span>
+    <button class="settings-btn" onclick="copyBoardAsText()" title="Copy board as text (⌘⇧C)">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <rect x="4.5" y="1.5" width="8" height="9" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
+        <path d="M1.5 4.5h1M1.5 4.5V12.5h8v-1.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+      </svg>
+    </button>
     <button class="settings-btn" onclick="openSettings()" title="Settings">
       <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M7.5 9.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
@@ -1278,6 +1304,9 @@ document.addEventListener('keydown', e => {
     todayItems = snap.todayItems;
     fullRerender();
     save();
+  } else if (e.key.toLowerCase() === 'c' && e.shiftKey) {
+    e.preventDefault();
+    copyBoardAsText();
   } else if ((e.key === 'z' && e.shiftKey || e.key === 'y') && redoStack.length > 0) {
     e.preventDefault();
     undoStack.push(JSON.stringify({ sections, todayItems }));
@@ -2123,6 +2152,45 @@ function updateEmptyState() {
 
 function escHtml(str) {
   return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────
+function showToast(msg) {
+  const existing = document.querySelector('.toast');
+  if (existing) existing.remove();
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => el.classList.add('fade-out'), 1200);
+  setTimeout(() => el.remove(), 1400);
+}
+
+// ── Export board as text ──────────────────────────────────────────────
+function copyBoardAsText() {
+  const stateChar = { none: ' ', half: '~', done: 'x' };
+  const lines = [];
+  sections.forEach(sec => {
+    lines.push(`## ${sec.title || '(untitled)'}`);
+    sec.tasks.forEach(t => {
+      const mark = stateChar[t.state] || ' ';
+      const note = (t.state === 'half' && t.note) ? `  (${t.note})` : '';
+      lines.push(`- [${mark}] ${t.text}${note}`);
+      t.subtasks.forEach(st => {
+        lines.push(`  - [${st.done ? 'x' : ' '}] ${st.text}`);
+      });
+    });
+    lines.push('');
+  });
+  const text = lines.join('\n');
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text)
+      .then(() => showToast('copied to clipboard'))
+      .catch(() => { fallbackCopy(text); showToast('copied to clipboard'); });
+  } else {
+    fallbackCopy(text);
+    showToast('copied to clipboard');
+  }
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────
