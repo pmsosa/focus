@@ -1265,6 +1265,10 @@ function fullRerender() {
 }
 
 document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    try { window.webkit.messageHandlers.focusClose?.postMessage(null); } catch (_) {}
+    return;
+  }
   if (!(e.metaKey || e.ctrlKey)) return;
   if (e.key === 'z' && !e.shiftKey && undoStack.length > 0) {
     e.preventDefault();
@@ -1983,9 +1987,38 @@ function addSubtask(sectionId, taskId) {
 }
 
 // ── Keyboard nav ──────────────────────────────────────────────────────
+function focusAdjacentTask(sectionId, taskId, dir) {
+  const inputs = [...document.querySelectorAll('.task-text-input')];
+  const idx = inputs.findIndex(inp => inp.closest('.task-item')?.dataset.id === taskId);
+  if (idx === -1) return;
+  const next = inputs[idx + dir];
+  if (next) next.focus();
+}
+
 function taskKeydown(e, sectionId, taskId) {
-  if (e.key === 'Enter') { e.preventDefault(); addTask(sectionId); }
-  if (e.key === 'Backspace' && e.target.value === '') { e.preventDefault(); removeTask(sectionId, taskId); }
+  if (e.key === 'Enter' && !e.metaKey) { e.preventDefault(); addTask(sectionId); return; }
+  if (e.key === 'Backspace' && e.target.value === '') { e.preventDefault(); removeTask(sectionId, taskId); return; }
+  if (e.key === 'Enter' && e.metaKey && !e.shiftKey) {
+    e.preventDefault();
+    const cb = document.querySelector(`.task-item[data-id="${taskId}"] .task-checkbox`);
+    if (cb) cycleState(sectionId, taskId, cb);
+    return;
+  }
+  if (e.key === 'Enter' && e.metaKey && e.shiftKey) {
+    e.preventDefault();
+    const cb = document.querySelector(`.task-item[data-id="${taskId}"] .task-checkbox`);
+    if (cb) cycleStatePartial({ preventDefault() {}, stopPropagation() {} }, sectionId, taskId, cb);
+    return;
+  }
+  if (e.key === 'd' && e.metaKey) {
+    e.preventDefault();
+    isInToday(taskId) ? removeFromToday(taskId) : addToToday(sectionId, taskId);
+    return;
+  }
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    focusAdjacentTask(sectionId, taskId, e.shiftKey ? -1 : 1);
+  }
 }
 
 function subtaskKeydown(e, sectionId, taskId, subtaskId) {
