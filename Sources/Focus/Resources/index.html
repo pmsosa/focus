@@ -154,6 +154,30 @@
     border-color: rgba(196, 98, 58, 0.5);
   }
 
+  .search-input {
+    background: var(--accent-soft);
+    border: 1px solid rgba(200,169,126,0.25);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 5px 10px;
+    border-radius: 5px;
+    outline: none;
+    width: 160px;
+    letter-spacing: 0.03em;
+    transition: border-color 0.15s, width 0.2s;
+  }
+  .search-input::placeholder { color: var(--text-dim); }
+  .search-input:focus {
+    border-color: rgba(200,169,126,0.5);
+  }
+  [data-theme="terracotta-ceramics"] .search-input {
+    border-color: rgba(196, 98, 58, 0.3);
+  }
+  [data-theme="terracotta-ceramics"] .search-input:focus {
+    border-color: rgba(196, 98, 58, 0.55);
+  }
+
   /* Main layout */
   .main-layout {
     display: flex;
@@ -199,6 +223,8 @@
     margin-bottom: 14px;
   }
   .section:hover { border-color: var(--border-light); }
+  .section.search-match { border-color: rgba(200,169,126,0.5); }
+  [data-theme="terracotta-ceramics"] .section.search-match { border-color: rgba(196,98,58,0.5); }
 
   @keyframes fadeUp {
     from { opacity: 0; transform: translateY(8px); }
@@ -1233,6 +1259,8 @@
 <div class="topbar">
   <span class="logo">focus.</span>
   <div class="topbar-right">
+    <input id="searchInput" class="search-input" placeholder="search tasks…"
+           oninput="filterTasks(this.value)" style="display:none">
     <span class="date-display" id="dateDisplay"></span>
     <button class="settings-btn" onclick="copyBoardAsText()" title="Copy board as text (⌘⇧C)">
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -1413,10 +1441,26 @@ function fullRerender() {
 
 document.addEventListener('keydown', e => {
   if (e.key === 'Escape') {
+    const inp = document.getElementById('searchInput');
+    if (inp && inp.style.display !== 'none') {
+      inp.value = '';
+      inp.style.display = 'none';
+      filterTasks('');
+      return;
+    }
     try { window.webkit.messageHandlers.focusClose?.postMessage(null); } catch (_) {}
     return;
   }
   if (!(e.metaKey || e.ctrlKey)) return;
+  if (e.key === 'f') {
+    e.preventDefault();
+    const inp = document.getElementById('searchInput');
+    const isHidden = inp.style.display === 'none';
+    inp.style.display = isHidden ? '' : 'none';
+    if (isHidden) { inp.focus(); inp.select(); }
+    else { inp.value = ''; filterTasks(''); }
+    return;
+  }
   if (e.key === 'z' && !e.shiftKey && undoStack.length > 0) {
     e.preventDefault();
     redoStack.push(JSON.stringify({ sections, todayItems }));
@@ -1438,6 +1482,30 @@ document.addEventListener('keydown', e => {
     save();
   }
 });
+
+function filterTasks(query) {
+  const q = query.toLowerCase().trim();
+  document.querySelectorAll('.task-item').forEach(el => {
+    const text = el.querySelector('.task-text-input')?.value.toLowerCase() || '';
+    el.style.opacity = (!q || text.includes(q)) ? '' : '0.15';
+  });
+  document.querySelectorAll('.section').forEach(secEl => {
+    const sectionId = secEl.dataset.id;
+    const sec = sections.find(s => s.id === sectionId);
+    if (!sec) return;
+    const hasMatch = [...secEl.querySelectorAll('.task-item')]
+      .some(el => el.style.opacity !== '0.15');
+    if (q) {
+      secEl.style.opacity = hasMatch ? '' : '0.3';
+      secEl.classList.toggle('search-match', hasMatch);
+      if (hasMatch && sec.collapsed) applyCollapse(sectionId, false);
+    } else {
+      secEl.style.opacity = '';
+      secEl.classList.remove('search-match');
+      if (sec.collapsed) applyCollapse(sectionId, true);
+    }
+  });
+}
 
 function uid() {
   return Math.random().toString(36).slice(2, 9);
