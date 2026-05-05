@@ -172,10 +172,17 @@
   }
 
   .board {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+    display: flex;
+    flex-wrap: wrap;
     gap: 14px;
-    align-content: start;
+    align-items: flex-start;
+  }
+
+  .board-col {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
   }
 
   /* Section cards */
@@ -264,6 +271,21 @@
     flex-shrink: 0;
   }
   .collapse-btn:hover { color: var(--text-muted); }
+
+  .sweep-btn {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 13px;
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: color 0.15s;
+    line-height: 1;
+    display: none;
+  }
+  .sweep-btn.visible { display: inline-flex; align-items: center; }
+  .sweep-btn:hover { color: var(--text-muted); }
   .color-dot-btn {
     width: 10px;
     height: 10px;
@@ -517,7 +539,7 @@
 
   /* Empty state */
   .empty-board {
-    grid-column: 1 / -1;
+    flex: 0 0 100%;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -750,6 +772,104 @@
     gap: 1px;
     max-height: 180px;
     overflow-y: auto;
+  }
+
+  /* Archive section */
+  .archive-section {
+    /* no border here — border lives in archive-header-row to avoid WebKit rendering it on display:none */
+  }
+
+  .archive-header-row {
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+  }
+
+  .archive-toggle-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 8px 14px;
+    cursor: pointer;
+    transition: color 0.12s;
+    letter-spacing: 0.04em;
+    text-align: left;
+  }
+  .archive-toggle-btn:hover { color: var(--text-muted); }
+
+  .archive-chevron {
+    font-size: 8px;
+    transition: transform 0.15s ease;
+    line-height: 1;
+  }
+  .archive-chevron.open { transform: rotate(90deg); }
+
+  .archive-count-badge {
+    font-size: 10px;
+    color: var(--text-dim);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 1px 7px;
+    letter-spacing: 0.03em;
+  }
+
+  .archive-clear-btn {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    font-family: var(--mono);
+    font-size: 10px;
+    cursor: pointer;
+    padding: 8px 12px 8px 4px;
+    border-radius: 4px;
+    transition: color 0.12s;
+    letter-spacing: 0.03em;
+    opacity: 0;
+  }
+  .archive-header-row:hover .archive-clear-btn { opacity: 1; }
+  .archive-clear-btn:hover { color: #b06858; }
+
+  .archive-list {
+    padding: 2px 10px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    max-height: 180px;
+    overflow-y: auto;
+  }
+
+  .archive-item {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    padding: 3px 6px;
+    border-radius: 5px;
+  }
+
+  .archive-item-text {
+    font-size: 11px;
+    color: var(--text-dim);
+    text-decoration: line-through;
+    text-decoration-color: var(--text-dim);
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .archive-item-date {
+    font-size: 10px;
+    color: var(--text-dim);
+    opacity: 0.6;
+    white-space: nowrap;
+    flex-shrink: 0;
   }
 
   /* Context menu */
@@ -1132,6 +1252,8 @@
         <p>Each section is a slice of your world — one per domain or context. Tasks live inside, not in a pipeline.</p>
         <button class="add-section-btn" style="margin-top:8px" onclick="addSection()">create your first section</button>
       </div>
+      <div class="board-col" id="board-col-0"></div>
+      <div class="board-col" id="board-col-1"></div>
     </div>
   </div>
 
@@ -1272,18 +1394,11 @@ function takeSnapshot() {
 }
 
 function fullRerender() {
-  const board = document.getElementById('board');
-  board.innerHTML = '';
-  const emptyDiv = document.createElement('div');
-  emptyDiv.className = 'empty-board';
-  emptyDiv.id = 'emptyState';
-  emptyDiv.innerHTML = `
-    <div class="big-hint">your work, in sections.</div>
-    <p>Each section is a slice of your world — one per domain or context. Tasks live inside, not in a pipeline.</p>
-    <button class="add-section-btn" style="margin-top:8px" onclick="addSection()">create your first section</button>
-  `;
-  board.appendChild(emptyDiv);
-  sections.forEach(s => renderSection(s));
+  const col0 = document.getElementById('board-col-0');
+  const col1 = document.getElementById('board-col-1');
+  if (col0) col0.innerHTML = '';
+  if (col1) col1.innerHTML = '';
+  sections.forEach(s => { renderSection(s); renderArchiveToggle(s.id); });
   updateEmptyState();
   updateSummary();
   rerenderTodayPanel();
@@ -1581,9 +1696,11 @@ function loadSaved() {
     const data = JSON.parse(raw);
     if (!Array.isArray(data) || data.length === 0) return false;
     data.forEach(s => {
+      if (!s.archivedTasks) s.archivedTasks = [];
       sections.push(s);
       renderSection(s);
       updateProgress(s.id);
+      renderArchiveToggle(s.id);
     });
 
     const rawToday = localStorage.getItem('focus-today-v1');
@@ -1673,6 +1790,15 @@ function applyCollapse(sectionId, collapsed) {
   el.querySelector('.section-progress-bar').style.display = collapsed ? 'none' : '';
   el.querySelector('.collapse-btn').textContent = collapsed ? '▸' : '▾';
   el.classList.toggle('section-collapsed', collapsed);
+  const archiveEl = document.getElementById(`archive-section-${sectionId}`);
+  if (archiveEl) {
+    if (collapsed) {
+      archiveEl.style.display = 'none';
+    } else {
+      const sec = sections.find(s => s.id === sectionId);
+      archiveEl.style.display = (sec?.archivedTasks?.length > 0) ? '' : 'none';
+    }
+  }
 }
 
 function cycleSectionColor(sectionId) {
@@ -1689,7 +1815,7 @@ function cycleSectionColor(sectionId) {
 
 function addSection(title = '') {
   const id = uid();
-  const section = { id, title, tasks: [], collapsed: false, color: null };
+  const section = { id, title, tasks: [], collapsed: false, color: null, archivedTasks: [] };
   sections.push(section);
   renderSection(section);
   updateEmptyState();
@@ -1716,7 +1842,8 @@ function addTask(sectionId, text = '', state = 'none', note = '', subtasks = [])
 
 // ── Render Section ────────────────────────────────────────────────────
 function renderSection(section) {
-  const board = document.getElementById('board');
+  const colIndex = sections.indexOf(section) % 2;
+  const board = document.getElementById(`board-col-${colIndex}`) || document.getElementById('board');
   const el = document.createElement('div');
   el.className = 'section';
   el.dataset.id = section.id;
@@ -1731,6 +1858,7 @@ function renderSection(section) {
              oninput="updateSectionTitle('${section.id}', this.value)">
       <div class="section-meta">
         <span class="progress-pill" id="pill-${section.id}">0 / 0</span>
+        <button class="sweep-btn" id="sweep-${section.id}" onclick="sweepDone('${section.id}')" title="Archive done tasks (⌘⇧⌫)">↓</button>
         <button class="section-menu-btn" onclick="removeSection('${section.id}')" title="Remove section">×</button>
       </div>
     </div>
@@ -1740,6 +1868,7 @@ function renderSection(section) {
         <span style="font-size:14px;line-height:1">+</span> add task
       </button>
     </div>
+    <div class="archive-section" id="archive-section-${section.id}" style="display:none"></div>
     <div class="section-progress-bar">
       <div class="section-progress-fill" id="prog-${section.id}" style="width:0%"></div>
     </div>
@@ -2047,6 +2176,11 @@ function taskKeydown(e, sectionId, taskId) {
   if (e.key === 'Tab') {
     e.preventDefault();
     focusAdjacentTask(sectionId, taskId, e.shiftKey ? -1 : 1);
+    return;
+  }
+  if (e.key === 'Backspace' && e.metaKey && e.shiftKey) {
+    e.preventDefault();
+    sweepDone(sectionId);
   }
 }
 
@@ -2129,6 +2263,8 @@ function updateProgress(sectionId) {
   if (pill) pill.textContent = `${done}${half ? ` + ${half}~` : ''} / ${total}`;
   const fill = document.getElementById(`prog-${sectionId}`);
   if (fill) fill.style.width = (total === 0 ? 0 : ((done + half * 0.5) / total) * 100) + '%';
+  const sweepBtn = document.getElementById(`sweep-${sectionId}`);
+  if (sweepBtn) sweepBtn.classList.toggle('visible', done > 0);
 }
 
 function updateSummary() {
@@ -2191,6 +2327,88 @@ function copyBoardAsText() {
     fallbackCopy(text);
     showToast('copied to clipboard');
   }
+}
+
+// ── Archive sweep ─────────────────────────────────────────────────────
+function sweepDone(sectionId) {
+  const sec = sections.find(s => s.id === sectionId);
+  if (!sec) return;
+  const toArchive = sec.tasks.filter(t => t.state === 'done');
+  if (toArchive.length === 0) return;
+  takeSnapshot();
+  const date = todayStr();
+  let needTodayRerender = false;
+  toArchive.forEach(t => {
+    sec.archivedTasks.push({ ...t, archivedDate: date });
+    document.querySelector(`.task-item[data-id="${t.id}"]`)?.remove();
+    if (isInToday(t.id)) {
+      todayItems = todayItems.filter(ti => ti.taskId !== t.id);
+      needTodayRerender = true;
+    }
+  });
+  sec.tasks = sec.tasks.filter(t => t.state !== 'done');
+  updateProgress(sectionId);
+  updateSummary();
+  if (needTodayRerender) rerenderTodayPanel();
+  renderArchiveToggle(sectionId);
+  save();
+  showToast(`${toArchive.length} task${toArchive.length > 1 ? 's' : ''} archived`);
+}
+
+function renderArchiveToggle(sectionId) {
+  const sec = sections.find(s => s.id === sectionId);
+  if (!sec) return;
+  const container = document.getElementById(`archive-section-${sectionId}`);
+  if (!container) return;
+
+  if (!sec.archivedTasks || sec.archivedTasks.length === 0) {
+    container.style.display = 'none';
+    container.innerHTML = '';
+    return;
+  }
+
+  const isOpen = container.dataset.open === 'true';
+  const count = sec.archivedTasks.length;
+  container.style.display = '';
+  container.innerHTML = `
+    <div class="archive-header-row">
+      <button class="archive-toggle-btn" onclick="toggleArchive('${sectionId}')">
+        <span class="archive-chevron ${isOpen ? 'open' : ''}">▶</span>
+        <span>archived</span>
+        <span class="archive-count-badge">${count}</span>
+      </button>
+      <button class="archive-clear-btn" onclick="clearArchive('${sectionId}')" title="Clear archive">clear</button>
+    </div>
+    <div class="archive-list" id="archive-list-${sectionId}" style="${isOpen ? '' : 'display:none'}">
+      ${sec.archivedTasks.map(t => `
+        <div class="archive-item">
+          <span class="archive-item-text">${escHtml(t.text || '(untitled)')}</span>
+          <span class="archive-item-date">${t.archivedDate || ''}</span>
+        </div>
+      `).join('')}
+    </div>
+  `;
+}
+
+function toggleArchive(sectionId) {
+  const container = document.getElementById(`archive-section-${sectionId}`);
+  if (!container) return;
+  const isOpen = container.dataset.open === 'true';
+  container.dataset.open = String(!isOpen);
+  const list = document.getElementById(`archive-list-${sectionId}`);
+  const chevron = container.querySelector('.archive-chevron');
+  if (list) list.style.display = isOpen ? 'none' : '';
+  if (chevron) chevron.classList.toggle('open', !isOpen);
+}
+
+function clearArchive(sectionId) {
+  takeSnapshot();
+  const sec = sections.find(s => s.id === sectionId);
+  if (!sec) return;
+  sec.archivedTasks = [];
+  renderArchiveToggle(sectionId);
+  save();
+  showToast('Archive cleared');
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────
