@@ -577,6 +577,12 @@
     flex-direction: column;
     overflow: hidden;
     border-radius: 0 0 var(--radius) 0;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+
+  .today-panel.drop-target {
+    border-left-color: var(--today-accent);
+    box-shadow: inset 2px 0 12px rgba(0,0,0,0.08), -2px 0 0 var(--today-accent);
   }
 
   .today-header {
@@ -1910,6 +1916,11 @@ function renderTask(sectionId, task) {
       <button class="task-action-btn" onclick="removeTask('${sectionId}','${task.id}')" title="Remove">×</button>
     </div>
   `;
+  el.setAttribute('draggable', true);
+  el.addEventListener('dragstart', e => {
+    e.dataTransfer.setData('text/plain', JSON.stringify({ taskId: task.id, sectionId }));
+    e.dataTransfer.effectAllowed = 'copy';
+  });
   el.addEventListener('contextmenu', e => showContextMenu(e, sectionId, task.id));
   el.addEventListener('click', e => {
     if (!e.target.closest('.task-checkbox, .task-actions, input, button')) {
@@ -2412,6 +2423,26 @@ function clearArchive(sectionId) {
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────
+(function wireTodayDrop() {
+  const panel = document.getElementById('todayPanel');
+  panel.addEventListener('dragover', e => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    panel.classList.add('drop-target');
+  });
+  panel.addEventListener('dragleave', e => {
+    if (!panel.contains(e.relatedTarget)) panel.classList.remove('drop-target');
+  });
+  panel.addEventListener('drop', e => {
+    e.preventDefault();
+    panel.classList.remove('drop-target');
+    try {
+      const { taskId, sectionId } = JSON.parse(e.dataTransfer.getData('text/plain'));
+      addToToday(sectionId, taskId);
+    } catch (_) {}
+  });
+})();
+
 loadSettings();
 
 if (!loadSaved()) {
