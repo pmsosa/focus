@@ -6,11 +6,33 @@ private class KeyableWindow: NSWindow {
     override var canBecomeMain: Bool { true }
 }
 
-class FocusWindow: NSObject, WKNavigationDelegate {
+private class FocusWebView: WKWebView {
+    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
+}
+
+private struct WinSize {
+    let width: CGFloat
+    let height: CGFloat
+
+    static func named(_ name: String) -> WinSize {
+        switch name {
+        case "small":      return WinSize(width: 800,  height: 560)
+        case "large":      return WinSize(width: 1300, height: 820)
+        case "fullscreen":
+            let sf = NSScreen.main?.visibleFrame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
+            return WinSize(width: sf.width, height: sf.height)
+        default:           return WinSize(width: 1060, height: 700) // medium
+        }
+    }
+}
+
+class FocusWindow: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
     private var window: NSWindow!
-    private var webView: WKWebView!
+    private var webView: FocusWebView!
     private var outsideClickMonitor: Any?
     private var escapeMonitor: Any?
+
+    private static let sizeKey = "focus-window-size"
 
     override init() {
         super.init()
@@ -18,11 +40,11 @@ class FocusWindow: NSObject, WKNavigationDelegate {
     }
 
     private func buildWindow() {
-        let width: CGFloat = 920
-        let height: CGFloat = 600
+        let sizeName = UserDefaults.standard.string(forKey: FocusWindow.sizeKey) ?? "medium"
+        let sz = WinSize.named(sizeName)
 
         window = KeyableWindow(
-            contentRect: NSRect(x: 0, y: 0, width: width, height: height),
+            contentRect: NSRect(x: 0, y: 0, width: sz.width, height: sz.height),
             styleMask: [.borderless, .fullSizeContentView],
             backing: .buffered,
             defer: false
@@ -34,8 +56,7 @@ class FocusWindow: NSObject, WKNavigationDelegate {
         window.isReleasedWhenClosed = false
         window.animationBehavior = .none
 
-        // Blurred background container
-        let visualEffect = NSVisualEffectView(frame: NSRect(x: 0, y: 0, width: width, height: height))
+        let visualEffect = NSVisualEffectView(frame: NSRect(x: 0, y: 0, width: sz.width, height: sz.height))
         visualEffect.material = .hudWindow
         visualEffect.blendingMode = .behindWindow
         visualEffect.state = .active
@@ -43,11 +64,11 @@ class FocusWindow: NSObject, WKNavigationDelegate {
         visualEffect.layer?.cornerRadius = 16
         visualEffect.layer?.masksToBounds = true
 
-        // WebView with persistent localStorage
         let config = WKWebViewConfiguration()
         config.websiteDataStore = .default()
+        config.userContentController.add(self, name: "focusBridge")
 
-        webView = WKWebView(frame: NSRect(x: 0, y: 0, width: width, height: height), configuration: config)
+        webView = FocusWebView(frame: NSRect(x: 0, y: 0, width: sz.width, height: sz.height), configuration: config)
         webView.navigationDelegate = self
         webView.setValue(false, forKey: "drawsBackground")
         webView.wantsLayer = true
@@ -61,12 +82,44 @@ class FocusWindow: NSObject, WKNavigationDelegate {
         loadHTML()
     }
 
+    // MARK: – WKScriptMessageHandler
+
+    func userContentController(_ userContentController: WKUserContentController, didReceive message: WKScriptMessage) {
+        guard message.name == "focusBridge",
+              let body = message.body as? [String: Any],
+              let type = body["type"] as? String else { return }
+
+        if type == "resize", let sizeName = body["size"] as? String {
+            DispatchQueue.main.async { [weak self] in
+                self?.applyWindowSize(sizeName)
+            }
+        }
+    }
+
+    private func applyWindowSize(_ sizeName: String) {
+        UserDefaults.standard.set(sizeName, forKey: FocusWindow.sizeKey)
+        let sz = WinSize.named(sizeName)
+        guard let screen = NSScreen.main else { return }
+        let sf = screen.visibleFrame
+        let origin = NSPoint(x: sf.midX - sz.width / 2, y: sf.midY - sz.height / 2)
+        let newFrame = NSRect(origin: origin, size: NSSize(width: sz.width, height: sz.height))
+        NSAnimationContext.runAnimationGroup { ctx in
+            ctx.duration = 0.2
+            ctx.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
+            window.animator().setFrame(newFrame, display: true)
+        }
+    }
+
+    // MARK: – HTML
+
     private func loadHTML() {
         guard let url = Bundle.module.url(forResource: "index", withExtension: "html") else {
             return
         }
         webView.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
     }
+
+    // MARK: – Show / Hide
 
     func show() {
         guard let screen = NSScreen.main else { return }
@@ -116,7 +169,6 @@ class FocusWindow: NSObject, WKNavigationDelegate {
 
     var isVisible: Bool { window.isVisible }
 
-    // Reload if something goes wrong (e.g. first launch with no cached resources)
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
             self?.loadHTML()

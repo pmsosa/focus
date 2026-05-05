@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Focus</title>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@300;400;500&family=JetBrains+Mono:wght@300;400;500&family=IBM+Plex+Mono:wght@300;400;500&family=Space+Mono:wght@400;700&family=Fira+Code:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -24,20 +24,53 @@
     --radius: 16px;
     --mono: 'DM Mono', monospace;
     --serif: 'Instrument Serif', Georgia, serif;
-    /* Today panel — warm amber palette, visibly brighter than the main board */
+    --font-size: 13px;
     --today-bg: rgba(22, 15, 6, 0.97);
     --today-surface: rgba(48, 32, 12, 0.75);
     --today-border: rgba(210, 165, 90, 0.38);
     --today-accent: #e8c070;
     --today-accent-soft: rgba(232, 192, 112, 0.14);
     --today-divider: rgba(180, 130, 60, 0.2);
+    --today-header-gradient: linear-gradient(180deg, rgba(220,170,80,0.08) 0%, transparent 100%);
+    --staleness-1: #c8943a;
+    --staleness-3: #d4682a;
+    --staleness-7: #c84030;
+    --ctx-bg: rgba(28, 26, 24, 0.98);
+    --settings-bg: rgba(16, 15, 14, 0.99);
+  }
+
+  [data-theme="terracotta-ceramics"] {
+    --bg: #f5ede4;
+    --surface: #ede0d5;
+    --surface-2: #e4d3c6;
+    --border: #d4b9a8;
+    --border-light: #c4a892;
+    --text: #3d2b1f;
+    --text-muted: #7a5a48;
+    --text-dim: #b09080;
+    --accent: #c4623a;
+    --accent-soft: rgba(196, 98, 58, 0.10);
+    --done-color: #5a7a3a;
+    --half-color: #a07840;
+    --today-bg: #efe3d8;
+    --today-surface: #e8d5c4;
+    --today-border: rgba(196, 98, 58, 0.28);
+    --today-accent: #c4623a;
+    --today-accent-soft: rgba(196, 98, 58, 0.12);
+    --today-divider: rgba(196, 98, 58, 0.15);
+    --today-header-gradient: linear-gradient(180deg, rgba(196,98,58,0.06) 0%, transparent 100%);
+    --staleness-1: #b07840;
+    --staleness-3: #c45028;
+    --staleness-7: #b03020;
+    --ctx-bg: #ece0d4;
+    --settings-bg: #ece0d4;
   }
 
   body {
     background: var(--bg);
     color: var(--text);
     font-family: var(--mono);
-    font-size: 13px;
+    font-size: var(--font-size);
     height: 100vh;
     display: flex;
     flex-direction: column;
@@ -72,22 +105,29 @@
     -webkit-app-region: no-drag;
   }
 
-  .kbd {
-    font-family: var(--mono);
-    font-size: 10px;
-    color: var(--text-muted);
-    background: var(--surface-2);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    padding: 3px 7px;
-    letter-spacing: 0.05em;
-  }
-
   .date-display {
     font-size: 11px;
     color: var(--text-muted);
     letter-spacing: 0.08em;
     text-transform: uppercase;
+  }
+
+  .settings-btn {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s, background 0.15s;
+    line-height: 1;
+  }
+  .settings-btn:hover {
+    color: var(--text-muted);
+    background: var(--surface-2);
   }
 
   .add-section-btn {
@@ -102,12 +142,19 @@
     transition: all 0.15s ease;
     letter-spacing: 0.05em;
   }
+  [data-theme="terracotta-ceramics"] .add-section-btn {
+    border-color: rgba(196, 98, 58, 0.3);
+  }
   .add-section-btn:hover {
     background: rgba(200,169,126,0.2);
     border-color: rgba(200,169,126,0.4);
   }
+  [data-theme="terracotta-ceramics"] .add-section-btn:hover {
+    background: rgba(196, 98, 58, 0.18);
+    border-color: rgba(196, 98, 58, 0.5);
+  }
 
-  /* Main layout — board + today panel side by side */
+  /* Main layout */
   .main-layout {
     display: flex;
     flex: 1;
@@ -484,7 +531,7 @@
     justify-content: space-between;
     padding: 14px 16px 12px;
     border-bottom: 1px solid var(--today-divider);
-    background: linear-gradient(180deg, rgba(220,170,80,0.08) 0%, transparent 100%);
+    background: var(--today-header-gradient);
     flex-shrink: 0;
   }
 
@@ -504,6 +551,9 @@
     border-radius: 20px;
     padding: 2px 9px;
     letter-spacing: 0.04em;
+  }
+  [data-theme="terracotta-ceramics"] .today-badge {
+    border-color: rgba(196, 98, 58, 0.28);
   }
 
   .today-list {
@@ -528,6 +578,9 @@
     color: rgba(210,165,90,0.3);
     text-align: center;
     letter-spacing: 0.03em;
+  }
+  [data-theme="terracotta-ceramics"] .today-empty-hint {
+    color: rgba(196, 98, 58, 0.35);
   }
 
   .today-item {
@@ -557,12 +610,18 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
+  [data-theme="terracotta-ceramics"] .today-item-text { color: #5a3c28; }
   .today-item-text.done {
     color: rgba(180,150,90,0.35);
     text-decoration: line-through;
     text-decoration-color: rgba(180,150,90,0.3);
   }
+  [data-theme="terracotta-ceramics"] .today-item-text.done {
+    color: rgba(160, 120, 80, 0.4);
+    text-decoration-color: rgba(160, 120, 80, 0.3);
+  }
   .today-item-text.half { color: rgba(210,180,120,0.65); }
+  [data-theme="terracotta-ceramics"] .today-item-text.half { color: rgba(160, 100, 60, 0.7); }
 
   .today-item-source {
     font-size: 10px;
@@ -572,8 +631,8 @@
     overflow: hidden;
     text-overflow: ellipsis;
   }
+  [data-theme="terracotta-ceramics"] .today-item-source { color: rgba(160, 100, 60, 0.5); }
 
-  /* Staleness — warm, bright, readable against the amber panel */
   .staleness {
     font-size: 10px;
     font-family: var(--mono);
@@ -582,9 +641,9 @@
     letter-spacing: 0.02em;
     font-weight: 500;
   }
-  .s1 { color: #c8943a; }   /* 1–2 days: warm amber */
-  .s3 { color: #d4682a; }   /* 3–6 days: orange */
-  .s7 { color: #c84030; }   /* 7+ days: red */
+  .s1 { color: var(--staleness-1); }
+  .s3 { color: var(--staleness-3); }
+  .s7 { color: var(--staleness-7); }
 
   .today-item-remove {
     opacity: 0;
@@ -600,10 +659,11 @@
     line-height: 1;
     flex-shrink: 0;
   }
+  [data-theme="terracotta-ceramics"] .today-item-remove { color: rgba(196, 98, 58, 0.4); }
   .today-item:hover .today-item-remove { opacity: 1; }
   .today-item-remove:hover { color: rgba(200,155,70,0.8); }
+  [data-theme="terracotta-ceramics"] .today-item-remove:hover { color: rgba(196, 98, 58, 0.8); }
 
-  /* Done section inside today panel */
   .today-done-section {
     border-top: 1px solid var(--today-divider);
     flex-shrink: 0;
@@ -624,7 +684,9 @@
     transition: color 0.12s;
     letter-spacing: 0.04em;
   }
+  [data-theme="terracotta-ceramics"] .today-done-toggle { color: rgba(196, 98, 58, 0.45); }
   .today-done-toggle:hover { color: rgba(220,185,110,0.7); }
+  [data-theme="terracotta-ceramics"] .today-done-toggle:hover { color: rgba(196, 98, 58, 0.75); }
 
   .today-done-chevron {
     font-size: 8px;
@@ -643,6 +705,11 @@
     padding: 1px 7px;
     letter-spacing: 0.03em;
   }
+  [data-theme="terracotta-ceramics"] .today-done-count-badge {
+    color: rgba(196, 98, 58, 0.55);
+    background: rgba(196, 98, 58, 0.08);
+    border-color: rgba(196, 98, 58, 0.2);
+  }
 
   .today-done-list {
     padding: 2px 7px 8px;
@@ -656,7 +723,7 @@
   /* Context menu */
   .context-menu {
     position: fixed;
-    background: rgba(28, 26, 24, 0.98);
+    background: var(--ctx-bg);
     border: 1px solid var(--border-light);
     border-radius: 8px;
     padding: 4px;
@@ -665,6 +732,9 @@
     box-shadow: 0 8px 28px rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,255,0.03);
     backdrop-filter: blur(12px);
     animation: ctxIn 0.1s ease;
+  }
+  [data-theme="terracotta-ceramics"] .context-menu {
+    box-shadow: 0 8px 28px rgba(0,0,0,0.2), 0 1px 0 rgba(255,255,255,0.4);
   }
   @keyframes ctxIn {
     from { opacity: 0; transform: scale(0.96) translateY(-2px); }
@@ -679,19 +749,319 @@
     cursor: pointer;
     letter-spacing: 0.03em;
     transition: background 0.1s;
+    color: var(--text);
   }
   .ctx-item:hover { background: var(--surface-2); }
   .ctx-item.add    { color: var(--today-accent); }
   .ctx-item.remove { color: #b06858; }
+
+  /* ── Settings Panel ────────────────────────────────────────────────── */
+  .settings-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.35);
+    z-index: 400;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+    border-radius: var(--radius);
+  }
+  .settings-overlay.open {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .settings-panel {
+    position: fixed;
+    top: 0;
+    right: 0;
+    width: 288px;
+    height: 100%;
+    background: var(--settings-bg);
+    border-left: 1px solid var(--border-light);
+    z-index: 500;
+    display: flex;
+    flex-direction: column;
+    transform: translateX(100%);
+    transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 0 var(--radius) var(--radius) 0;
+    backdrop-filter: blur(20px);
+  }
+  .settings-panel.open {
+    transform: translateX(0);
+  }
+
+  .settings-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px 12px;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .settings-title {
+    font-family: var(--serif);
+    font-style: italic;
+    font-size: 18px;
+    color: var(--accent);
+    letter-spacing: 0.02em;
+  }
+
+  .settings-close {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 18px;
+    padding: 2px 5px;
+    border-radius: 4px;
+    transition: color 0.12s;
+    line-height: 1;
+  }
+  .settings-close:hover { color: var(--text-muted); }
+
+  .settings-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 6px 0 20px;
+  }
+
+  .settings-section {
+    padding: 14px 18px;
+  }
+
+  .settings-section-label {
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 10px;
+    font-family: var(--mono);
+  }
+
+  .settings-divider {
+    height: 1px;
+    background: var(--border);
+    margin: 0 18px;
+  }
+
+  /* Theme options */
+  .theme-options {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .theme-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: 0.03em;
+    transition: all 0.15s;
+    text-align: left;
+  }
+  .theme-option:hover {
+    border-color: var(--border-light);
+    color: var(--text);
+    background: var(--surface-2);
+  }
+  .theme-option.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-soft);
+  }
+
+  .theme-swatch {
+    width: 22px;
+    height: 22px;
+    border-radius: 5px;
+    flex-shrink: 0;
+  }
+  .swatch-midnight {
+    background: linear-gradient(135deg, #1a1918 55%, #c8a97e 100%);
+    border: 1px solid #3a3835;
+  }
+  .swatch-terracotta {
+    background: linear-gradient(135deg, #f5ede4 55%, #c4623a 100%);
+    border: 1px solid #d4b9a8;
+  }
+
+  /* Font options */
+  .font-options {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .font-option {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 7px 10px;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-size: 12px;
+    letter-spacing: 0.02em;
+    transition: all 0.15s;
+    text-align: left;
+  }
+  .font-option:hover {
+    border-color: var(--border-light);
+    color: var(--text);
+    background: var(--surface-2);
+  }
+  .font-option.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-soft);
+  }
+
+  /* Size options */
+  .size-options {
+    display: flex;
+    gap: 6px;
+  }
+
+  .size-option {
+    flex: 1;
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 7px 0;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.06em;
+    transition: all 0.15s;
+    text-align: center;
+  }
+  .size-option:hover {
+    border-color: var(--border-light);
+    color: var(--text);
+    background: var(--surface-2);
+  }
+  .size-option.active {
+    border-color: var(--accent);
+    color: var(--accent);
+    background: var(--accent-soft);
+  }
+
+  /* Data actions */
+  .data-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .data-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    padding: 8px 12px;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 11.5px;
+    letter-spacing: 0.04em;
+    transition: all 0.15s;
+    text-align: left;
+  }
+  .data-btn:hover {
+    border-color: var(--border-light);
+    color: var(--text);
+    background: var(--surface-2);
+  }
+  .export-btn:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+  .import-btn:hover { color: var(--accent); border-color: var(--accent); background: var(--accent-soft); }
+
+  .settings-note {
+    font-size: 10px;
+    color: var(--text-dim);
+    line-height: 1.6;
+    margin-top: 8px;
+    font-style: italic;
+  }
+
+  /* ── Dev log ───────────────────────────────────────────────────────── */
+  .dev-log-actions {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 8px;
+  }
+
+  .dev-action-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 4px 10px;
+    cursor: pointer;
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 10px;
+    letter-spacing: 0.05em;
+    transition: all 0.12s;
+  }
+  .dev-action-btn:hover {
+    border-color: var(--border-light);
+    color: var(--text);
+  }
+
+  .dev-log {
+    background: rgba(0, 0, 0, 0.45);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    line-height: 1.65;
+    height: 200px;
+    overflow-y: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+    user-select: text;
+    -webkit-user-select: text;
+    cursor: text;
+  }
+  [data-theme="terracotta-ceramics"] .dev-log {
+    background: rgba(0, 0, 0, 0.08);
+  }
+  .dev-log-entry { display: block; }
+  .dev-log-entry.log   { color: #7ab878; }
+  .dev-log-entry.info  { color: #78a8d4; }
+  .dev-log-entry.warn  { color: #d4a840; }
+  .dev-log-entry.error { color: #d46858; }
+  .dev-log-empty {
+    color: rgba(120, 184, 120, 0.3);
+    font-style: italic;
+  }
+  [data-theme="terracotta-ceramics"] .dev-log-entry.log  { color: #486838; }
+  [data-theme="terracotta-ceramics"] .dev-log-entry.info { color: #386898; }
+  [data-theme="terracotta-ceramics"] .dev-log-entry.warn { color: #886820; }
+  [data-theme="terracotta-ceramics"] .dev-log-entry.error { color: #a83828; }
 </style>
 </head>
-<body>
+<body data-theme="midnight-ember">
 
 <div class="topbar">
   <span class="logo">focus.</span>
   <div class="topbar-right">
     <span class="date-display" id="dateDisplay"></span>
-    <span class="kbd">⌥ Space</span>
+    <button class="settings-btn" onclick="openSettings()" title="Settings">
+      <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M7.5 9.5a2 2 0 1 0 0-4 2 2 0 0 0 0 4z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+        <path d="M12.03 9.22a1 1 0 0 0 .2 1.1l.04.04a1.21 1.21 0 0 1-1.71 1.71l-.04-.04a1 1 0 0 0-1.1-.2 1 1 0 0 0-.6.91V13a1.21 1.21 0 0 1-2.42 0v-.06a1 1 0 0 0-.65-.91 1 1 0 0 0-1.1.2l-.04.04a1.21 1.21 0 0 1-1.71-1.71l.04-.04a1 1 0 0 0 .2-1.1 1 1 0 0 0-.91-.6H2a1.21 1.21 0 0 1 0-2.42h.06a1 1 0 0 0 .91-.65 1 1 0 0 0-.2-1.1l-.04-.04a1.21 1.21 0 0 1 1.71-1.71l.04.04a1 1 0 0 0 1.1.2h.05A1 1 0 0 0 6.22 2V2a1.21 1.21 0 0 1 2.42 0v.06a1 1 0 0 0 .6.91 1 1 0 0 0 1.1-.2l.04-.04a1.21 1.21 0 0 1 1.71 1.71l-.04.04a1 1 0 0 0-.2 1.1v.05a1 1 0 0 0 .91.6H13a1.21 1.21 0 0 1 0 2.42h-.06a1 1 0 0 0-.91.57z" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </button>
     <button class="add-section-btn" onclick="addSection()">+ section</button>
   </div>
 </div>
@@ -738,6 +1108,93 @@
   <div class="ctx-item" id="ctxTodayItem"></div>
 </div>
 
+<!-- Settings overlay + panel -->
+<div class="settings-overlay" id="settingsOverlay" onclick="closeSettings()"></div>
+<div class="settings-panel" id="settingsPanel">
+  <div class="settings-header">
+    <span class="settings-title">settings</span>
+    <button class="settings-close" onclick="closeSettings()">×</button>
+  </div>
+  <div class="settings-body">
+
+    <div class="settings-section">
+      <div class="settings-section-label">theme</div>
+      <div class="theme-options">
+        <button class="theme-option" data-theme="midnight-ember" onclick="setTheme('midnight-ember')">
+          <span class="theme-swatch swatch-midnight"></span>
+          Midnight Ember
+        </button>
+        <button class="theme-option" data-theme="terracotta-ceramics" onclick="setTheme('terracotta-ceramics')">
+          <span class="theme-swatch swatch-terracotta"></span>
+          Terracotta Ceramics
+        </button>
+      </div>
+    </div>
+
+    <div class="settings-divider"></div>
+
+    <div class="settings-section">
+      <div class="settings-section-label">font</div>
+      <div class="font-options">
+        <button class="font-option" data-font="DM Mono" onclick="setFont('DM Mono')" style="font-family:'DM Mono',monospace">DM Mono</button>
+        <button class="font-option" data-font="JetBrains Mono" onclick="setFont('JetBrains Mono')" style="font-family:'JetBrains Mono',monospace">JetBrains Mono</button>
+        <button class="font-option" data-font="IBM Plex Mono" onclick="setFont('IBM Plex Mono')" style="font-family:'IBM Plex Mono',monospace">IBM Plex Mono</button>
+        <button class="font-option" data-font="Space Mono" onclick="setFont('Space Mono')" style="font-family:'Space Mono',monospace">Space Mono</button>
+        <button class="font-option" data-font="Fira Code" onclick="setFont('Fira Code')" style="font-family:'Fira Code',monospace">Fira Code</button>
+      </div>
+    </div>
+
+    <div class="settings-divider"></div>
+
+    <div class="settings-section">
+      <div class="settings-section-label">size</div>
+      <div class="size-options">
+        <button class="size-option" data-size="12" onclick="setFontSize(12)">S</button>
+        <button class="size-option" data-size="13" onclick="setFontSize(13)">M</button>
+        <button class="size-option" data-size="15" onclick="setFontSize(15)">L</button>
+      </div>
+    </div>
+
+    <div class="settings-divider"></div>
+
+    <div class="settings-section">
+      <div class="settings-section-label">window</div>
+      <div class="size-options">
+        <button class="size-option wsize-option" data-wsize="small"      onclick="setWindowSize('small')">S</button>
+        <button class="size-option wsize-option" data-wsize="medium"     onclick="setWindowSize('medium')">M</button>
+        <button class="size-option wsize-option" data-wsize="large"      onclick="setWindowSize('large')">L</button>
+        <button class="size-option wsize-option" data-wsize="fullscreen" onclick="setWindowSize('fullscreen')" title="Fullscreen">⛶</button>
+      </div>
+    </div>
+
+    <div class="settings-divider"></div>
+
+    <div class="settings-section">
+      <div class="settings-section-label">data</div>
+      <div class="data-actions">
+        <button class="data-btn export-btn" onclick="exportData()">↑ export backup</button>
+        <button class="data-btn import-btn" onclick="document.getElementById('importInput').click()">↓ import backup</button>
+        <input type="file" id="importInput" accept=".json" style="display:none" onchange="importData(this)">
+      </div>
+      <p class="settings-note">Exports all sections, tasks, and today items as a JSON backup file.</p>
+    </div>
+
+    <div class="settings-divider"></div>
+
+    <div class="settings-section">
+      <div class="settings-section-label">developer</div>
+      <div class="dev-log-actions">
+        <button class="dev-action-btn" onclick="copyDevLog()">copy all</button>
+        <button class="dev-action-btn" onclick="clearDevLog()">clear</button>
+      </div>
+      <div class="dev-log" id="devLog">
+        <span class="dev-log-empty">no logs yet…</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
 <script>
 // ── State ──────────────────────────────────────────────────────────────
 let sections = [];
@@ -776,6 +1233,221 @@ function updateDate() {
 }
 updateDate();
 
+// ── Dev log ────────────────────────────────────────────────────────────
+const devLogs = [];
+const DEV_LOG_MAX = 300;
+
+(function interceptConsole() {
+  const methods = ['log', 'info', 'warn', 'error'];
+  methods.forEach(method => {
+    const orig = console[method].bind(console);
+    console[method] = (...args) => {
+      orig(...args);
+      const msg = args.map(a => {
+        try { return typeof a === 'object' ? JSON.stringify(a) : String(a); }
+        catch(e) { return String(a); }
+      }).join(' ');
+      devLogs.push({ level: method, msg, time: new Date().toLocaleTimeString('en', { hour12: false }) });
+      if (devLogs.length > DEV_LOG_MAX) devLogs.shift();
+      flushDevLog();
+    };
+  });
+  window.addEventListener('error', ev => {
+    devLogs.push({ level: 'error', msg: `${ev.message}  (${ev.filename}:${ev.lineno}:${ev.colno})`, time: new Date().toLocaleTimeString('en', { hour12: false }) });
+    if (devLogs.length > DEV_LOG_MAX) devLogs.shift();
+    flushDevLog();
+  });
+  window.addEventListener('unhandledrejection', ev => {
+    devLogs.push({ level: 'error', msg: `Unhandled rejection: ${ev.reason}`, time: new Date().toLocaleTimeString('en', { hour12: false }) });
+    if (devLogs.length > DEV_LOG_MAX) devLogs.shift();
+    flushDevLog();
+  });
+})();
+
+function flushDevLog() {
+  const el = document.getElementById('devLog');
+  if (!el) return;
+  if (devLogs.length === 0) {
+    el.innerHTML = '<span class="dev-log-empty">no logs yet…</span>';
+    return;
+  }
+  el.innerHTML = devLogs.map(({ level, msg, time }) =>
+    `<span class="dev-log-entry ${level}">[${time}] [${level.toUpperCase().padEnd(5)}] ${escHtml(msg)}</span>`
+  ).join('\n');
+  el.scrollTop = el.scrollHeight;
+}
+
+function clearDevLog() {
+  devLogs.length = 0;
+  flushDevLog();
+}
+
+function copyDevLog() {
+  const text = devLogs.map(({ level, msg, time }) =>
+    `[${time}] [${level.toUpperCase()}] ${msg}`
+  ).join('\n');
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+  } else {
+    fallbackCopy(text);
+  }
+}
+
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.select();
+  document.execCommand('copy');
+  document.body.removeChild(ta);
+}
+
+// ── Settings ───────────────────────────────────────────────────────────
+let appSettings = { theme: 'midnight-ember', font: 'DM Mono', fontSize: 13, windowSize: 'medium' };
+
+function loadSettings() {
+  try {
+    const raw = localStorage.getItem('focus-settings-v1');
+    if (raw) Object.assign(appSettings, JSON.parse(raw));
+  } catch(e) {}
+  applySettings();
+}
+
+function saveSettings() {
+  try {
+    localStorage.setItem('focus-settings-v1', JSON.stringify(appSettings));
+  } catch(e) {}
+}
+
+function applySettings() {
+  document.body.setAttribute('data-theme', appSettings.theme);
+  applyDynamicStyles();
+  updateSettingsUI();
+}
+
+function applyDynamicStyles() {
+  let style = document.getElementById('focus-dynamic-styles');
+  if (!style) {
+    style = document.createElement('style');
+    style.id = 'focus-dynamic-styles';
+    document.head.appendChild(style);
+  }
+  const font = `'${appSettings.font}', monospace`;
+  const sz = appSettings.fontSize;
+  const sizeMap = {
+    12: { body: 12, task: 11,   note: 10,   sub: 10.5, ui: 10,   tiny: 9   },
+    13: { body: 13, task: 12,   note: 11,   sub: 11.5, ui: 11,   tiny: 10  },
+    15: { body: 15, task: 14,   note: 13,   sub: 13.5, ui: 12.5, tiny: 11.5 },
+  };
+  const s = sizeMap[sz] || sizeMap[13];
+  style.textContent = `
+    body, input, button, textarea { font-family: ${font}; }
+    body { font-size: ${s.body}px; }
+    .task-text-input  { font-size: ${s.task}px;  font-family: ${font}; }
+    .task-note-input  { font-size: ${s.note}px;  font-family: ${font}; }
+    .subtask-input    { font-size: ${s.sub}px;   font-family: ${font}; }
+    .add-task-btn, .today-done-toggle, .ctx-item,
+    .font-option, .data-btn, .dev-action-btn,
+    .size-option, .add-section-btn, .settings-note { font-size: ${s.ui}px; font-family: ${font}; }
+    .today-item-text  { font-size: ${s.task}px;  font-family: ${font}; }
+    .progress-pill, .today-badge, .today-done-count-badge,
+    .today-item-source, .staleness, .date-display,
+    .settings-section-label, .summary-bar { font-size: ${s.tiny}px; font-family: ${font}; }
+  `;
+}
+
+function updateSettingsUI() {
+  document.querySelectorAll('.theme-option').forEach(el => {
+    el.classList.toggle('active', el.dataset.theme === appSettings.theme);
+  });
+  document.querySelectorAll('.font-option').forEach(el => {
+    el.classList.toggle('active', el.dataset.font === appSettings.font);
+  });
+  document.querySelectorAll('.size-option').forEach(el => {
+    el.classList.toggle('active', Number(el.dataset.size) === appSettings.fontSize);
+  });
+  document.querySelectorAll('.wsize-option').forEach(el => {
+    el.classList.toggle('active', el.dataset.wsize === appSettings.windowSize);
+  });
+}
+
+function setTheme(name) {
+  appSettings.theme = name;
+  applySettings();
+  saveSettings();
+}
+
+function setFont(name) {
+  appSettings.font = name;
+  applySettings();
+  saveSettings();
+}
+
+function setFontSize(size) {
+  appSettings.fontSize = size;
+  applySettings();
+  saveSettings();
+}
+
+function setWindowSize(name) {
+  appSettings.windowSize = name;
+  saveSettings();
+  updateSettingsUI();
+  try {
+    window.webkit.messageHandlers.focusBridge.postMessage({ type: 'resize', size: name });
+  } catch(e) {}
+}
+
+function openSettings() {
+  document.getElementById('settingsPanel').classList.add('open');
+  document.getElementById('settingsOverlay').classList.add('open');
+  updateSettingsUI();
+  flushDevLog();
+}
+
+function closeSettings() {
+  document.getElementById('settingsPanel').classList.remove('open');
+  document.getElementById('settingsOverlay').classList.remove('open');
+}
+
+function exportData() {
+  const data = {
+    sections,
+    todayItems,
+    settings: appSettings,
+    exportedAt: new Date().toISOString()
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `focus-backup-${todayStr()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importData(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.sections) throw new Error('Invalid backup');
+      if (data.sections) localStorage.setItem('focus-v1', JSON.stringify(data.sections));
+      if (data.todayItems) localStorage.setItem('focus-today-v1', JSON.stringify(data.todayItems));
+      if (data.settings) localStorage.setItem('focus-settings-v1', JSON.stringify(data.settings));
+      window.location.reload();
+    } catch(err) {
+      alert('Could not import: invalid or corrupted backup file.');
+    }
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+
 // ── Persistence ────────────────────────────────────────────────────────
 function save() {
   try {
@@ -800,7 +1472,6 @@ function loadSaved() {
     if (rawToday) {
       todayItems = JSON.parse(rawToday) || [];
       handleDayRollover();
-      // Remove any todayItems whose tasks no longer exist
       todayItems = todayItems.filter(ti => findTask(ti.taskId));
     }
 
@@ -819,7 +1490,6 @@ function handleDayRollover() {
   const today = todayStr();
   const lastDate = localStorage.getItem('focus-last-date');
   if (lastDate && lastDate !== today) {
-    // New day: drop done items, carry forward anything still open
     todayItems = todayItems.filter(ti => {
       const task = findTask(ti.taskId);
       return task && task.state !== 'done';
@@ -988,16 +1658,12 @@ function renderSubtask(taskId, subtask, sectionId) {
 
 // ── Set State ──────────────────────────────────────────────────────────
 function setTaskState(sectionId, taskId, checkbox, next) {
-
-  // Update data model
   const sec = sections.find(s => s.id === sectionId);
   const task = sec?.tasks.find(t => t.id === taskId);
   if (task) task.state = next;
 
-  // Update the clicked checkbox (may be on board or today panel)
   checkbox.dataset.state = next;
 
-  // Sync board task item DOM
   const boardItem = document.querySelector(`.task-item[data-id="${taskId}"]`);
   if (boardItem) {
     const boardCb = boardItem.querySelector('.task-checkbox');
@@ -1016,13 +1682,11 @@ function setTaskState(sectionId, taskId, checkbox, next) {
   save();
 }
 
-// left-click: toggle none ↔ done
 function cycleState(sectionId, taskId, checkbox) {
   const next = checkbox.dataset.state === 'done' ? 'none' : 'done';
   setTaskState(sectionId, taskId, checkbox, next);
 }
 
-// right-click: toggle none ↔ half (partial)
 function cycleStatePartial(e, sectionId, taskId, checkbox) {
   e.preventDefault();
   e.stopPropagation();
@@ -1154,6 +1818,9 @@ function hideContextMenu() {
 
 document.addEventListener('click', e => {
   if (!e.target.closest('.context-menu')) hideContextMenu();
+  if (!e.target.closest('.settings-panel') && !e.target.closest('.settings-btn')) {
+    closeSettings();
+  }
 });
 
 // ── Toggle note ───────────────────────────────────────────────────────
@@ -1224,7 +1891,6 @@ function removeSubtask(sectionId, taskId, subtaskId) {
 }
 
 function removeSection(sectionId) {
-  if (!confirm('Remove this section and all its tasks?')) return;
   const sec = sections.find(s => s.id === sectionId);
   if (sec) sec.tasks.forEach(t => { if (isInToday(t.id)) removeFromToday(t.id); });
   sections = sections.filter(s => s.id !== sectionId);
@@ -1300,6 +1966,8 @@ function escHtml(str) {
 }
 
 // ── Boot ──────────────────────────────────────────────────────────────
+loadSettings();
+
 if (!loadSaved()) {
   handleDayRollover();
   const s1 = addSection('Operations');
