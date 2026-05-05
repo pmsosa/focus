@@ -172,9 +172,10 @@
   }
 
   .board {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+    columns: 270px;
+    column-fill: auto;
     gap: 14px;
+    height: 100%;
   }
 
   /* Section cards */
@@ -187,6 +188,8 @@
     min-height: 160px;
     transition: border-color 0.2s ease;
     animation: fadeUp 0.22s ease both;
+    break-inside: avoid;
+    margin-bottom: 14px;
   }
   .section:hover { border-color: var(--border-light); }
 
@@ -247,6 +250,22 @@
     line-height: 1;
   }
   .section-menu-btn:hover { color: var(--text-muted); }
+
+  .collapse-btn {
+    background: none;
+    border: none;
+    color: var(--text-dim);
+    cursor: pointer;
+    font-size: 12px;
+    padding: 2px 4px;
+    border-radius: 4px;
+    transition: color 0.15s;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+  .collapse-btn:hover { color: var(--text-muted); }
+  .section.section-collapsed { min-height: 0; }
+  .section.section-collapsed .section-header { border-bottom: none; }
 
   /* Task list */
   .task-list {
@@ -485,7 +504,7 @@
 
   /* Empty state */
   .empty-board {
-    grid-column: 1 / -1;
+    column-span: all;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -1590,9 +1609,27 @@ function syncAllTodayIndicators() {
 }
 
 // ── Add Section ────────────────────────────────────────────────────────
+function toggleCollapse(sectionId) {
+  const sec = sections.find(s => s.id === sectionId);
+  if (!sec) return;
+  sec.collapsed = !sec.collapsed;
+  applyCollapse(sectionId, sec.collapsed);
+  save();
+}
+
+function applyCollapse(sectionId, collapsed) {
+  const el = document.querySelector(`.section[data-id="${sectionId}"]`);
+  if (!el) return;
+  el.querySelector('.task-list').style.display = collapsed ? 'none' : '';
+  el.querySelector('.add-task-row').style.display = collapsed ? 'none' : '';
+  el.querySelector('.section-progress-bar').style.display = collapsed ? 'none' : '';
+  el.querySelector('.collapse-btn').textContent = collapsed ? '▸' : '▾';
+  el.classList.toggle('section-collapsed', collapsed);
+}
+
 function addSection(title = '') {
   const id = uid();
-  const section = { id, title, tasks: [] };
+  const section = { id, title, tasks: [], collapsed: false };
   sections.push(section);
   renderSection(section);
   updateEmptyState();
@@ -1625,6 +1662,7 @@ function renderSection(section) {
   el.dataset.id = section.id;
   el.innerHTML = `
     <div class="section-header">
+      <button class="collapse-btn" onclick="toggleCollapse('${section.id}')">▾</button>
       <input class="section-title-input" placeholder="section name…"
              value="${escHtml(section.title)}"
              oninput="updateSectionTitle('${section.id}', this.value)">
@@ -1645,6 +1683,7 @@ function renderSection(section) {
   `;
   board.appendChild(el);
   section.tasks.forEach(t => renderTask(section.id, t));
+  applyCollapse(section.id, section.collapsed ?? false);
   if (!section.title) setTimeout(() => el.querySelector('.section-title-input').focus(), 50);
 }
 
