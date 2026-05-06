@@ -312,6 +312,37 @@
   }
   .sweep-btn.visible { display: inline-flex; align-items: center; }
   .sweep-btn:hover { color: var(--text-muted); }
+  .section-drag-handle {
+    color: var(--text-dim);
+    cursor: grab;
+    font-size: 13px;
+    padding: 2px 4px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    -webkit-app-region: no-drag;
+    -webkit-user-drag: element;
+    user-select: none;
+    line-height: 1;
+  }
+  .section-drag-handle:hover { color: var(--text-muted); }
+  .section-drag-handle:active { cursor: grabbing; }
+  .section.section-dragging { opacity: 0.35; pointer-events: none; }
+  .task-item.task-dragging { opacity: 0.35; }
+  .drop-line {
+    height: 2px;
+    background: var(--accent);
+    border-radius: 1px;
+    margin: 1px 0;
+    pointer-events: none;
+    flex-shrink: 0;
+  }
+  .section-drop-line {
+    height: 2px;
+    background: var(--accent);
+    border-radius: 1px;
+    margin: 4px 0;
+    pointer-events: none;
+  }
   .color-dot-btn {
     width: 10px;
     height: 10px;
@@ -1290,6 +1321,8 @@
       <div class="board-col" id="board-col-1"></div>
     </div>
   </div>
+  <div id="task-drop-indicator" class="drop-line" style="display:none"></div>
+  <div id="section-drop-indicator" class="section-drop-line" style="display:none"></div>
 
   <div class="today-panel" id="todayPanel">
     <div class="today-header">
@@ -1413,6 +1446,7 @@
 // ── State ──────────────────────────────────────────────────────────────
 let sections = [];
 let todayItems = []; // [{taskId, sectionId, addedDate: 'YYYY-MM-DD'}]
+let currentDrag = null; // { type: 'task'|'section', taskId?, sectionId }
 
 const SECTION_COLORS = [null, '#c8a97e', '#7ab07a', '#7a9ab0', '#b07a9a', '#b0a07a', '#7ab0a0', '#b08a7a'];
 
@@ -1427,7 +1461,15 @@ function takeSnapshot() {
   redoStack = [];
 }
 
+function rescueIndicators() {
+  ['task-drop-indicator', 'section-drop-indicator'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.style.display = 'none'; document.body.appendChild(el); }
+  });
+}
+
 function fullRerender() {
+  rescueIndicators();
   const col0 = document.getElementById('board-col-0');
   const col1 = document.getElementById('board-col-1');
   if (col0) col0.innerHTML = '';
@@ -1934,6 +1976,7 @@ function renderSection(section) {
         <span class="progress-pill" id="pill-${section.id}">0 / 0</span>
         <button class="sweep-btn" id="sweep-${section.id}" onclick="sweepDone('${section.id}')" title="Archive done tasks (⌘⇧⌫)">↓</button>
         <button class="section-menu-btn" onclick="removeSection('${section.id}')" title="Remove section">×</button>
+        <div class="section-drag-handle" title="Drag to reorder">⠿</div>
       </div>
     </div>
     <div class="task-list" id="tasks-${section.id}"></div>
@@ -1951,6 +1994,82 @@ function renderSection(section) {
   section.tasks.forEach(t => renderTask(section.id, t));
   applyCollapse(section.id, section.collapsed ?? false);
   if (!section.title) setTimeout(() => el.querySelector('.section-title-input').focus(), 50);
+
+  // ── Section drag (reorder) ────────────────────────────────────────────
+  // Handle is the drag source — avoids WKWebView mouseup-before-dragstart quirk.
+  const handle = el.querySelector('.section-drag-handle');
+  handle.setAttribute('draggable', 'true');
+  handle.addEventListener('dragstart', e => {
+    e.stopPropagation();
+    currentDrag = { type: 'section', sectionId: section.id };
+    e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'section', sectionId: section.id }));
+    e.dataTransfer.effectAllowed = 'move';
+    el.classList.add('section-dragging');
+  });
+  handle.addEventListener('dragend', () => {
+    el.classList.remove('section-dragging');
+    if (currentDrag?.type === 'section') currentDrag = null;
+    const ind = document.getElementById('section-drop-indicator');
+    if (ind) ind.style.display = 'none';
+  });
+
+  // ── Task-list reorder (drop zone) ─────────────────────────────────────
+  let _taskDropAfter = undefined; // undefined = not over this list; null = append to end
+  const taskList = el.querySelector('.task-list');
+  taskList.addEventListener('dragover', e => {
+    if (!currentDrag || currentDrag.type !== 'task') return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+    const afterEl = getDragAfterTask(taskList, e.clientY);
+    _taskDropAfter = afterEl; // cache — clientY unreliable in drop event
+    const ind = document.getElementById('task-drop-indicator');
+    afterEl ? taskList.insertBefore(ind, afterEl) : taskList.appendChild(ind);
+    ind.style.display = 'block';
+  });
+  taskList.addEventListener('dragleave', e => {
+    if (!taskList.contains(e.relatedTarget)) {
+      document.getElementById('task-drop-indicator').style.display = 'none';
+      _taskDropAfter = undefined;
+    }
+  });
+  taskList.addEventListener('drop', e => {
+    e.preventDefault();
+    e.stopPropagation();
+    document.getElementById('task-drop-indicator').style.display = 'none';
+    if (!currentDrag || currentDrag.type !== 'task') return;
+    if (_taskDropAfter === undefined) return;
+
+    const afterEl = _taskDropAfter;
+    _taskDropAfter = undefined;
+
+    const { taskId, sectionId: fromSid } = currentDrag;
+    const toSid = section.id;
+    const fromSec = sections.find(s => s.id === fromSid);
+    const toSec = sections.find(s => s.id === toSid);
+    if (!fromSec || !toSec) return;
+
+    const taskIdx = fromSec.tasks.findIndex(t => t.id === taskId);
+    if (taskIdx === -1) return;
+
+    takeSnapshot();
+    const [task] = fromSec.tasks.splice(taskIdx, 1);
+
+    if (afterEl === null) {
+      toSec.tasks.push(task);
+    } else {
+      let toIdx = toSec.tasks.findIndex(t => t.id === afterEl.dataset.id);
+      if (toIdx < 0) toIdx = toSec.tasks.length;
+      toSec.tasks.splice(toIdx, 0, task);
+    }
+
+    rerenderTaskList(fromSid);
+    if (fromSid !== toSid) rerenderTaskList(toSid);
+    updateProgress(fromSid);
+    if (fromSid !== toSid) updateProgress(toSid);
+    updateSummary();
+    save();
+  });
 }
 
 // ── Render Task ───────────────────────────────────────────────────────
@@ -1986,8 +2105,16 @@ function renderTask(sectionId, task) {
   `;
   el.setAttribute('draggable', true);
   el.addEventListener('dragstart', e => {
+    currentDrag = { type: 'task', taskId: task.id, sectionId };
     e.dataTransfer.setData('text/plain', JSON.stringify({ taskId: task.id, sectionId }));
-    e.dataTransfer.effectAllowed = 'copy';
+    e.dataTransfer.effectAllowed = 'copyMove';
+    el.classList.add('task-dragging');
+  });
+  el.addEventListener('dragend', () => {
+    el.classList.remove('task-dragging');
+    currentDrag = null;
+    const ind = document.getElementById('task-drop-indicator');
+    if (ind) ind.style.display = 'none';
   });
   el.addEventListener('contextmenu', e => showContextMenu(e, sectionId, task.id));
   el.addEventListener('click', e => {
@@ -2490,10 +2617,95 @@ function clearArchive(sectionId) {
   showToast('Archive cleared');
 }
 
+// ── Drag-reorder helpers ──────────────────────────────────────────────
+function getDragAfterTask(container, y) {
+  const els = [...container.querySelectorAll('.task-item')]
+    .filter(el => el.dataset.id !== currentDrag?.taskId);
+  return els.reduce((closest, child) => {
+    const box = child.getBoundingClientRect();
+    const offset = y - box.top - box.height / 2;
+    if (offset < 0 && offset > closest.offset) return { offset, element: child };
+    return closest;
+  }, { offset: Number.NEGATIVE_INFINITY }).element ?? null;
+}
+
+function getDragAfterSection(col, y) {
+  const els = [...col.querySelectorAll('.section')]
+    .filter(el => el.dataset.id !== currentDrag?.sectionId);
+  return els.reduce((closest, child) => {
+    const box = child.getBoundingClientRect();
+    const offset = y - box.top - box.height / 2;
+    if (offset < 0 && offset > closest.offset) return { offset, element: child };
+    return closest;
+  }, { offset: Number.NEGATIVE_INFINITY }).element ?? null;
+}
+
+function rerenderTaskList(sectionId) {
+  const sec = sections.find(s => s.id === sectionId);
+  const list = document.getElementById(`tasks-${sectionId}`);
+  if (!sec || !list) return;
+  rescueIndicators(); // prevent indicator from being destroyed by innerHTML = ''
+  list.innerHTML = '';
+  sec.tasks.forEach(t => renderTask(sectionId, t));
+  syncAllTodayIndicators();
+}
+
+function wireBoardReorder() {
+  ['board-col-0', 'board-col-1'].forEach(colId => {
+    const col = document.getElementById(colId);
+    let _sectionDropAfter = undefined; // undefined = not over this col; null = append
+    col.addEventListener('dragover', e => {
+      if (!currentDrag || currentDrag.type !== 'section') return;
+      e.preventDefault();
+      const afterEl = getDragAfterSection(col, e.clientY);
+      _sectionDropAfter = afterEl; // cache — clientY unreliable in drop event
+      const ind = document.getElementById('section-drop-indicator');
+      afterEl ? col.insertBefore(ind, afterEl) : col.appendChild(ind);
+      ind.style.display = 'block';
+    });
+    col.addEventListener('dragleave', e => {
+      if (!col.contains(e.relatedTarget)) {
+        const ind = document.getElementById('section-drop-indicator');
+        if (ind.parentElement === col) ind.style.display = 'none';
+        _sectionDropAfter = undefined;
+      }
+    });
+    col.addEventListener('drop', e => {
+      e.preventDefault();
+      document.getElementById('section-drop-indicator').style.display = 'none';
+      if (!currentDrag || currentDrag.type !== 'section') return;
+      if (_sectionDropAfter === undefined) return;
+
+      const afterEl = _sectionDropAfter;
+      _sectionDropAfter = undefined;
+
+      const { sectionId: dragSid } = currentDrag;
+      const fromIdx = sections.findIndex(s => s.id === dragSid);
+      if (fromIdx === -1) return;
+
+      takeSnapshot();
+      const [sec] = sections.splice(fromIdx, 1);
+
+      if (afterEl === null) {
+        sections.push(sec);
+      } else {
+        let toIdx = sections.findIndex(s => s.id === afterEl.dataset.id);
+        if (toIdx < 0) toIdx = sections.length;
+        sections.splice(toIdx, 0, sec);
+      }
+
+      currentDrag = null;
+      fullRerender();
+      save();
+    });
+  });
+}
+
 // ── Boot ──────────────────────────────────────────────────────────────
 (function wireTodayDrop() {
   const panel = document.getElementById('todayPanel');
   panel.addEventListener('dragover', e => {
+    if (!currentDrag || currentDrag.type !== 'task') return;
     e.preventDefault();
     e.dataTransfer.dropEffect = 'copy';
     panel.classList.add('drop-target');
@@ -2504,6 +2716,7 @@ function clearArchive(sectionId) {
   panel.addEventListener('drop', e => {
     e.preventDefault();
     panel.classList.remove('drop-target');
+    if (!currentDrag || currentDrag.type !== 'task') return;
     try {
       const { taskId, sectionId } = JSON.parse(e.dataTransfer.getData('text/plain'));
       addToToday(sectionId, taskId);
@@ -2511,7 +2724,9 @@ function clearArchive(sectionId) {
   });
 })();
 
+document.addEventListener('contextmenu', e => e.preventDefault());
 loadSettings();
+wireBoardReorder();
 
 if (!loadSaved()) {
   handleDayRollover();
