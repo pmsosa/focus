@@ -232,39 +232,19 @@
 .sweep-btn.visible { display: inline-flex; align-items: center; }
 .sweep-btn:hover { color: var(--text-muted); }
 
-.section-drag-handle {
+.section-move-btn {
+  background: none;
+  border: none;
   color: var(--text-dim);
-  cursor: grab;
+  cursor: pointer;
   font-size: 13px;
   padding: 2px 4px;
   border-radius: 4px;
-  flex-shrink: 0;
-  -webkit-app-region: no-drag;
-  -webkit-user-drag: element;
-  user-select: none;
+  transition: color 0.15s;
   line-height: 1;
-}
-.section-drag-handle:hover { color: var(--text-muted); }
-.section-drag-handle:active { cursor: grabbing; }
-
-.section.section-dragging { opacity: 0.35; pointer-events: none; }
-.task-item.task-dragging { opacity: 0.35; }
-
-.drop-line {
-  height: 2px;
-  background: var(--accent);
-  border-radius: 1px;
-  margin: 1px 0;
-  pointer-events: none;
   flex-shrink: 0;
 }
-.section-drop-line {
-  height: 2px;
-  background: var(--accent);
-  border-radius: 1px;
-  margin: 4px 0;
-  pointer-events: none;
-}
+.section-move-btn:hover { color: var(--text-muted); }
 
 .color-dot-btn {
   width: 10px;

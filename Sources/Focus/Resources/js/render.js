@@ -17,8 +17,9 @@ function renderSection(section) {
       <div class="section-meta">
         <span class="progress-pill" id="pill-${section.id}">0 / 0</span>
         <button class="sweep-btn" id="sweep-${section.id}" onclick="sweepDone('${section.id}')" title="Archive done tasks (⌘⇧⌫)">↓</button>
+        <button class="section-move-btn" onclick="moveSection('${section.id}',-1)" title="Move up">↑</button>
+        <button class="section-move-btn" onclick="moveSection('${section.id}',1)" title="Move down">↓</button>
         <button class="section-menu-btn" onclick="removeSection('${section.id}')" title="Remove section">×</button>
-        <div class="section-drag-handle" title="Drag to reorder">⠿</div>
       </div>
     </div>
     <div class="task-list" id="tasks-${section.id}"></div>
@@ -36,81 +37,6 @@ function renderSection(section) {
   section.tasks.forEach(t => renderTask(section.id, t));
   applyCollapse(section.id, section.collapsed ?? false);
   if (!section.title) setTimeout(() => el.querySelector('.section-title-input').focus(), 50);
-
-  // Section drag — handle is the drag source to avoid WKWebView mouseup-before-dragstart quirk.
-  const handle = el.querySelector('.section-drag-handle');
-  handle.setAttribute('draggable', 'true');
-  handle.addEventListener('dragstart', e => {
-    e.stopPropagation();
-    currentDrag = { type: 'section', sectionId: section.id };
-    e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'section', sectionId: section.id }));
-    e.dataTransfer.effectAllowed = 'move';
-    el.classList.add('section-dragging');
-  });
-  handle.addEventListener('dragend', () => {
-    el.classList.remove('section-dragging');
-    if (currentDrag?.type === 'section') currentDrag = null;
-    const ind = document.getElementById('section-drop-indicator');
-    if (ind) ind.style.display = 'none';
-  });
-
-  // Task-list reorder drop zone
-  let _taskDropAfter = undefined; // undefined = not over this list; null = append to end
-  const taskList = el.querySelector('.task-list');
-  taskList.addEventListener('dragover', e => {
-    if (!currentDrag || currentDrag.type !== 'task') return;
-    e.preventDefault();
-    e.stopPropagation();
-    e.dataTransfer.dropEffect = 'move';
-    const afterEl = getDragAfterTask(taskList, e.clientY);
-    _taskDropAfter = afterEl;
-    const ind = document.getElementById('task-drop-indicator');
-    afterEl ? taskList.insertBefore(ind, afterEl) : taskList.appendChild(ind);
-    ind.style.display = 'block';
-  });
-  taskList.addEventListener('dragleave', e => {
-    if (!taskList.contains(e.relatedTarget)) {
-      document.getElementById('task-drop-indicator').style.display = 'none';
-      _taskDropAfter = undefined;
-    }
-  });
-  taskList.addEventListener('drop', e => {
-    e.preventDefault();
-    e.stopPropagation();
-    document.getElementById('task-drop-indicator').style.display = 'none';
-    if (!currentDrag || currentDrag.type !== 'task') return;
-    if (_taskDropAfter === undefined) return;
-
-    const afterEl = _taskDropAfter;
-    _taskDropAfter = undefined;
-
-    const { taskId, sectionId: fromSid } = currentDrag;
-    const toSid = section.id;
-    const fromSec = sections.find(s => s.id === fromSid);
-    const toSec = sections.find(s => s.id === toSid);
-    if (!fromSec || !toSec) return;
-
-    const taskIdx = fromSec.tasks.findIndex(t => t.id === taskId);
-    if (taskIdx === -1) return;
-
-    takeSnapshot();
-    const [task] = fromSec.tasks.splice(taskIdx, 1);
-
-    if (afterEl === null) {
-      toSec.tasks.push(task);
-    } else {
-      let toIdx = toSec.tasks.findIndex(t => t.id === afterEl.dataset.id);
-      if (toIdx < 0) toIdx = toSec.tasks.length;
-      toSec.tasks.splice(toIdx, 0, task);
-    }
-
-    rerenderTaskList(fromSid);
-    if (fromSid !== toSid) rerenderTaskList(toSid);
-    updateProgress(fromSid);
-    if (fromSid !== toSid) updateProgress(toSid);
-    updateSummary();
-    save();
-  });
 }
 
 // ── Render Task ───────────────────────────────────────────────────────
@@ -139,24 +65,13 @@ function renderTask(sectionId, task) {
       <div class="subtask-list" id="subtasks-${task.id}"></div>
     </div>
     <div class="task-actions">
+      <button class="task-action-btn task-move-btn" onclick="moveTask('${sectionId}','${task.id}',-1)" title="Move up">↑</button>
+      <button class="task-action-btn task-move-btn" onclick="moveTask('${sectionId}','${task.id}',1)" title="Move down">↓</button>
       <button class="task-action-btn" onclick="toggleNote('${task.id}')" title="Add note">≡</button>
       <button class="task-action-btn" onclick="addSubtask('${sectionId}','${task.id}')" title="Add sub-task">⊕</button>
       <button class="task-action-btn" onclick="removeTask('${sectionId}','${task.id}')" title="Remove">×</button>
     </div>
   `;
-  el.setAttribute('draggable', true);
-  el.addEventListener('dragstart', e => {
-    currentDrag = { type: 'task', taskId: task.id, sectionId };
-    e.dataTransfer.setData('text/plain', JSON.stringify({ taskId: task.id, sectionId }));
-    e.dataTransfer.effectAllowed = 'copyMove';
-    el.classList.add('task-dragging');
-  });
-  el.addEventListener('dragend', () => {
-    el.classList.remove('task-dragging');
-    currentDrag = null;
-    const ind = document.getElementById('task-drop-indicator');
-    if (ind) ind.style.display = 'none';
-  });
   el.addEventListener('contextmenu', e => showContextMenu(e, sectionId, task.id));
   el.addEventListener('click', e => {
     if (!e.target.closest('.task-checkbox, .task-actions, input, button')) {
@@ -341,15 +256,7 @@ function updateEmptyState() {
 }
 
 // ── Full re-render ────────────────────────────────────────────────────
-function rescueIndicators() {
-  ['task-drop-indicator', 'section-drop-indicator'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) { el.style.display = 'none'; document.body.appendChild(el); }
-  });
-}
-
 function fullRerender() {
-  rescueIndicators();
   const col0 = document.getElementById('board-col-0');
   const col1 = document.getElementById('board-col-1');
   if (col0) col0.innerHTML = '';
@@ -365,7 +272,6 @@ function rerenderTaskList(sectionId) {
   const sec = sections.find(s => s.id === sectionId);
   const list = document.getElementById(`tasks-${sectionId}`);
   if (!sec || !list) return;
-  rescueIndicators();
   list.innerHTML = '';
   sec.tasks.forEach(t => renderTask(sectionId, t));
   syncAllTodayIndicators();
