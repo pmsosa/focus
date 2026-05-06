@@ -1,0 +1,72 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: rgba(15, 14, 14, 0.93);
+  --surface: rgba(22, 21, 20, 0.9);
+  --surface-2: rgba(30, 29, 28, 0.95);
+  --border: #2e2c2a;
+  --border-light: #3a3835;
+  --text: #e8e4df;
+  --text-muted: #7a756e;
+  --text-dim: #4a4540;
+  --accent: #c8a97e;
+  --accent-soft: rgba(200, 169, 126, 0.12);
+  --done-color: #5a7a5a;
+  --half-color: #7a6a4a;
+  --radius: 16px;
+  --mono: 'DM Mono', monospace;
+  --serif: 'Instrument Serif', Georgia, serif;
+  --font-size: 13px;
+  --today-bg: rgba(22, 15, 6, 0.97);
+  --today-surface: rgba(48, 32, 12, 0.75);
+  --today-border: rgba(210, 165, 90, 0.38);
+  --today-accent: #e8c070;
+  --today-accent-soft: rgba(232, 192, 112, 0.14);
+  --today-divider: rgba(180, 130, 60, 0.2);
+  --today-header-gradient: linear-gradient(180deg, rgba(220,170,80,0.08) 0%, transparent 100%);
+  --staleness-1: #c8943a;
+  --staleness-3: #d4682a;
+  --staleness-7: #c84030;
+  --ctx-bg: rgba(28, 26, 24, 0.98);
+  --settings-bg: rgba(16, 15, 14, 0.99);
+}
+
+[data-theme="terracotta-ceramics"] {
+  --bg: #f5ede4;
+  --surface: #ede0d5;
+  --surface-2: #e4d3c6;
+  --border: #d4b9a8;
+  --border-light: #c4a892;
+  --text: #3d2b1f;
+  --text-muted: #7a5a48;
+  --text-dim: #b09080;
+  --accent: #c4623a;
+  --accent-soft: rgba(196, 98, 58, 0.10);
+  --done-color: #5a7a3a;
+  --half-color: #a07840;
+  --today-bg: #efe3d8;
+  --today-surface: #e8d5c4;
+  --today-border: rgba(196, 98, 58, 0.28);
+  --today-accent: #c4623a;
+  --today-accent-soft: rgba(196, 98, 58, 0.12);
+  --today-divider: rgba(196, 98, 58, 0.15);
+  --today-header-gradient: linear-gradient(180deg, rgba(196,98,58,0.06) 0%, transparent 100%);
+  --staleness-1: #b07840;
+  --staleness-3: #c45028;
+  --staleness-7: #b03020;
+  --ctx-bg: #ece0d4;
+  --settings-bg: #ece0d4;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: var(--font-size);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: var(--radius);
+  -webkit-font-smoothing: antialiased;
+}

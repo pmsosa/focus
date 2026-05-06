@@ -113,10 +113,11 @@ class FocusWindow: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
     // MARK: – HTML
 
     private func loadHTML() {
-        guard let url = Bundle.module.url(forResource: "index", withExtension: "html") else {
+        guard let resourcesURL = Bundle.module.resourceURL?.appendingPathComponent("Resources"),
+              let url = Bundle.module.url(forResource: "Resources/index", withExtension: "html") else {
             return
         }
-        webView.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
+        webView.loadFileURL(url, allowingReadAccessTo: resourcesURL)
     }
 
     // MARK: – Show / Hide

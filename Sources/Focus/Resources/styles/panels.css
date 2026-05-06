@@ -1,0 +1,345 @@
+/* Today Panel */
+.today-panel {
+  width: 258px;
+  flex-shrink: 0;
+  background: var(--today-bg);
+  border-left: 1px solid var(--today-border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: 0 0 var(--radius) 0;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.today-panel.drop-target {
+  border-left-color: var(--today-accent);
+  box-shadow: inset 2px 0 12px rgba(0,0,0,0.08), -2px 0 0 var(--today-accent);
+}
+
+.today-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--today-divider);
+  background: var(--today-header-gradient);
+  flex-shrink: 0;
+}
+
+.today-title {
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 18px;
+  color: var(--today-accent);
+  letter-spacing: 0.02em;
+}
+
+.today-badge {
+  font-size: 10px;
+  color: var(--today-accent);
+  background: var(--today-accent-soft);
+  border: 1px solid rgba(232,192,112,0.28);
+  border-radius: 20px;
+  padding: 2px 9px;
+  letter-spacing: 0.04em;
+}
+[data-theme="terracotta-ceramics"] .today-badge {
+  border-color: rgba(196, 98, 58, 0.28);
+}
+
+.today-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 7px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.today-empty {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 20px;
+}
+.today-empty-hint {
+  font-size: 11px;
+  line-height: 1.9;
+  color: rgba(210,165,90,0.3);
+  text-align: center;
+  letter-spacing: 0.03em;
+}
+[data-theme="terracotta-ceramics"] .today-empty-hint {
+  color: rgba(196, 98, 58, 0.35);
+}
+
+.today-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 7px;
+  transition: background 0.12s;
+}
+.today-item:hover { background: var(--today-surface); }
+
+.today-item-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.today-item-text {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: #d8d0c4;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+[data-theme="terracotta-ceramics"] .today-item-text { color: #5a3c28; }
+.today-item-text.done {
+  color: rgba(180,150,90,0.35);
+  text-decoration: line-through;
+  text-decoration-color: rgba(180,150,90,0.3);
+}
+[data-theme="terracotta-ceramics"] .today-item-text.done {
+  color: rgba(160, 120, 80, 0.4);
+  text-decoration-color: rgba(160, 120, 80, 0.3);
+}
+.today-item-text.half { color: rgba(210,180,120,0.65); }
+[data-theme="terracotta-ceramics"] .today-item-text.half { color: rgba(160, 100, 60, 0.7); }
+
+.today-item-source {
+  font-size: 10px;
+  color: rgba(200,165,90,0.4);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+[data-theme="terracotta-ceramics"] .today-item-source { color: rgba(160, 100, 60, 0.5); }
+
+.staleness {
+  font-size: 10px;
+  font-family: var(--mono);
+  flex-shrink: 0;
+  align-self: center;
+  letter-spacing: 0.02em;
+  font-weight: 500;
+}
+.s1 { color: var(--staleness-1); }
+.s3 { color: var(--staleness-3); }
+.s7 { color: var(--staleness-7); }
+
+.today-item-remove {
+  opacity: 0;
+  background: none;
+  border: none;
+  color: rgba(200,155,70,0.4);
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0 2px;
+  border-radius: 3px;
+  transition: all 0.12s;
+  align-self: center;
+  line-height: 1;
+  flex-shrink: 0;
+}
+[data-theme="terracotta-ceramics"] .today-item-remove { color: rgba(196, 98, 58, 0.4); }
+.today-item:hover .today-item-remove { opacity: 1; }
+.today-item-remove:hover { color: rgba(200,155,70,0.8); }
+[data-theme="terracotta-ceramics"] .today-item-remove:hover { color: rgba(196, 98, 58, 0.8); }
+
+.today-done-section {
+  border-top: 1px solid var(--today-divider);
+  flex-shrink: 0;
+}
+
+.today-done-toggle {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  width: 100%;
+  background: none;
+  border: none;
+  color: rgba(200,165,90,0.45);
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 10px 14px;
+  cursor: pointer;
+  transition: color 0.12s;
+  letter-spacing: 0.04em;
+}
+[data-theme="terracotta-ceramics"] .today-done-toggle { color: rgba(196, 98, 58, 0.45); }
+.today-done-toggle:hover { color: rgba(220,185,110,0.7); }
+[data-theme="terracotta-ceramics"] .today-done-toggle:hover { color: rgba(196, 98, 58, 0.75); }
+
+.today-done-chevron {
+  font-size: 8px;
+  display: inline-block;
+  transition: transform 0.15s ease;
+  line-height: 1;
+}
+.today-done-chevron.open { transform: rotate(90deg); }
+
+.today-done-count-badge {
+  font-size: 10px;
+  color: rgba(200,165,90,0.5);
+  background: rgba(200,165,90,0.08);
+  border: 1px solid rgba(200,165,90,0.18);
+  border-radius: 20px;
+  padding: 1px 7px;
+  letter-spacing: 0.03em;
+}
+[data-theme="terracotta-ceramics"] .today-done-count-badge {
+  color: rgba(196, 98, 58, 0.55);
+  background: rgba(196, 98, 58, 0.08);
+  border-color: rgba(196, 98, 58, 0.2);
+}
+
+.today-done-list {
+  padding: 2px 7px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+/* Archive section */
+.archive-section {
+  /* border lives in archive-header-row to avoid WebKit rendering it on display:none */
+}
+
+.archive-header-row {
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+}
+
+.archive-toggle-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 8px 14px;
+  cursor: pointer;
+  transition: color 0.12s;
+  letter-spacing: 0.04em;
+  text-align: left;
+}
+.archive-toggle-btn:hover { color: var(--text-muted); }
+
+.archive-chevron {
+  font-size: 8px;
+  transition: transform 0.15s ease;
+  line-height: 1;
+}
+.archive-chevron.open { transform: rotate(90deg); }
+
+.archive-count-badge {
+  font-size: 10px;
+  color: var(--text-dim);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 1px 7px;
+  letter-spacing: 0.03em;
+}
+
+.archive-clear-btn {
+  background: none;
+  border: none;
+  color: var(--text-dim);
+  font-family: var(--mono);
+  font-size: 10px;
+  cursor: pointer;
+  padding: 8px 12px 8px 4px;
+  border-radius: 4px;
+  transition: color 0.12s;
+  letter-spacing: 0.03em;
+  opacity: 0;
+}
+.archive-header-row:hover .archive-clear-btn { opacity: 1; }
+.archive-clear-btn:hover { color: #b06858; }
+
+.archive-list {
+  padding: 2px 10px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.archive-item {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 3px 6px;
+  border-radius: 5px;
+}
+
+.archive-item-text {
+  font-size: 11px;
+  color: var(--text-dim);
+  text-decoration: line-through;
+  text-decoration-color: var(--text-dim);
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.archive-item-date {
+  font-size: 10px;
+  color: var(--text-dim);
+  opacity: 0.6;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* Context menu */
+.context-menu {
+  position: fixed;
+  background: var(--ctx-bg);
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 4px;
+  z-index: 1000;
+  min-width: 160px;
+  box-shadow: 0 8px 28px rgba(0,0,0,0.6), 0 1px 0 rgba(255,255,255,0.03);
+  backdrop-filter: blur(12px);
+  animation: ctxIn 0.1s ease;
+}
+[data-theme="terracotta-ceramics"] .context-menu {
+  box-shadow: 0 8px 28px rgba(0,0,0,0.2), 0 1px 0 rgba(255,255,255,0.4);
+}
+@keyframes ctxIn {
+  from { opacity: 0; transform: scale(0.96) translateY(-2px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.ctx-item {
+  padding: 7px 12px;
+  border-radius: 5px;
+  font-family: var(--mono);
+  font-size: 12px;
+  cursor: pointer;
+  letter-spacing: 0.03em;
+  transition: background 0.1s;
+  color: var(--text);
+}
+.ctx-item:hover { background: var(--surface-2); }
+.ctx-item.add    { color: var(--today-accent); }
+.ctx-item.remove { color: #b06858; }

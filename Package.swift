@@ -9,7 +9,7 @@ let package = Package(
             name: "Focus",
             path: "Sources/Focus",
             resources: [
-                .process("Resources")
+                .copy("Resources")
             ],
             linkerSettings: [
                 .linkedFramework("Carbon"),
