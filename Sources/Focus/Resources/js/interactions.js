@@ -28,6 +28,18 @@ document.addEventListener('keydown', e => {
     else { inp.value = ''; filterTasks(''); }
     return;
   }
+  if (e.key === 'i') {
+    e.preventDefault();
+    if (!appSettings.inboxEnabled) return;
+    const inboxSec = sections.find(s => s.id === INBOX_ID);
+    if (inboxSec && inboxSec.collapsed) {
+      inboxSec.collapsed = false;
+      applyCollapse(INBOX_ID, false);
+      save();
+    }
+    addTask(INBOX_ID);
+    return;
+  }
   if (e.key === 'z' && !e.shiftKey && undoStack.length > 0) {
     e.preventDefault();
     redoStack.push(JSON.stringify({ sections, todayItems }));
@@ -152,6 +164,29 @@ function cycleSectionColor(sectionId) {
   const btn = document.getElementById(`cdot-${sectionId}`);
   btn.style.background = sec.color || 'transparent';
   btn.classList.toggle('has-color', !!sec.color);
+  save();
+}
+
+// ── Inbox ──────────────────────────────────────────────────────────────
+function applyInboxVisibility() {
+  document.body.classList.toggle('inbox-disabled', !appSettings.inboxEnabled);
+}
+
+function setInboxEnabled(val) {
+  appSettings.inboxEnabled = val;
+  if (val) ensureInbox();
+  applyInboxVisibility();
+  updateSettingsUI();
+  saveSettings();
+}
+
+function ensureInbox() {
+  if (sections.find(s => s.id === INBOX_ID)) return;
+  const inbox = { id: INBOX_ID, title: 'inbox', tasks: [], collapsed: false, color: null, archivedTasks: [] };
+  sections.unshift(inbox);
+  renderSection(inbox);
+  renderArchiveToggle(INBOX_ID);
+  updateEmptyState();
   save();
 }
 
@@ -363,9 +398,13 @@ function moveTask(sectionId, taskId, dir) {
 }
 
 function moveSection(sectionId, dir) {
+  if (sectionId === INBOX_ID) return;
   const idx = sections.findIndex(s => s.id === sectionId);
   const newIdx = idx + dir;
   if (newIdx < 0 || newIdx >= sections.length) return;
+  // Keep inbox pinned at position 0
+  const inboxIdx = sections.findIndex(s => s.id === INBOX_ID);
+  if (inboxIdx >= 0 && newIdx <= inboxIdx) return;
   takeSnapshot();
   const [sec] = sections.splice(idx, 1);
   sections.splice(newIdx, 0, sec);
@@ -397,6 +436,7 @@ function removeSubtask(sectionId, taskId, subtaskId) {
 }
 
 function removeSection(sectionId) {
+  if (sectionId === INBOX_ID) return;
   takeSnapshot();
   const sec = sections.find(s => s.id === sectionId);
   if (sec) sec.tasks.forEach(t => { if (isInToday(t.id)) removeFromToday(t.id); });

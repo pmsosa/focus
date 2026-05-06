@@ -1,3 +1,6 @@
+// ── Constants ──────────────────────────────────────────────────────────
+const INBOX_ID = 'inbox';
+
 // ── State ──────────────────────────────────────────────────────────────
 let sections = [];
 let todayItems = []; // [{taskId, sectionId, addedDate: 'YYYY-MM-DD'}]

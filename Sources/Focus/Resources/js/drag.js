@@ -27,6 +27,7 @@ loadSettings();
 
 if (!loadSaved()) {
   handleDayRollover();
+  ensureInbox();
   const s1 = addSection('Operations');
   addTask(s1, 'Review vendor contracts', 'done');
   addTask(s1, 'Update team handbook', 'half', 'missing onboarding section');

@@ -1,9 +1,10 @@
 // ── Render Section ────────────────────────────────────────────────────
 function renderSection(section) {
+  const isInbox = section.id === INBOX_ID;
   const colIndex = sections.indexOf(section) % 2;
   const board = document.getElementById(`board-col-${colIndex}`) || document.getElementById('board');
   const el = document.createElement('div');
-  el.className = 'section';
+  el.className = 'section' + (isInbox ? ' inbox-section' : '');
   el.dataset.id = section.id;
   el.innerHTML = `
     <div class="section-header">
@@ -13,13 +14,16 @@ function renderSection(section) {
               style="background:${section.color || 'transparent'}"></button>
       <input class="section-title-input" placeholder="section name…"
              value="${escHtml(section.title)}"
+             ${isInbox ? 'readonly' : ''}
              oninput="updateSectionTitle('${section.id}', this.value)">
       <div class="section-meta">
         <span class="progress-pill" id="pill-${section.id}">0 / 0</span>
         <button class="sweep-btn" id="sweep-${section.id}" onclick="sweepDone('${section.id}')" title="Archive done tasks (⌘⇧⌫)">↓</button>
+        ${isInbox ? '' : `
         <button class="section-move-btn" onclick="moveSection('${section.id}',-1)" title="Move up">↑</button>
         <button class="section-move-btn" onclick="moveSection('${section.id}',1)" title="Move down">↓</button>
         <button class="section-menu-btn" onclick="removeSection('${section.id}')" title="Remove section">×</button>
+        `}
       </div>
     </div>
     <div class="task-list" id="tasks-${section.id}"></div>
@@ -36,7 +40,7 @@ function renderSection(section) {
   board.appendChild(el);
   section.tasks.forEach(t => renderTask(section.id, t));
   applyCollapse(section.id, section.collapsed ?? false);
-  if (!section.title) setTimeout(() => el.querySelector('.section-title-input').focus(), 50);
+  if (!section.title && !isInbox) setTimeout(() => el.querySelector('.section-title-input').focus(), 50);
 }
 
 // ── Render Task ───────────────────────────────────────────────────────

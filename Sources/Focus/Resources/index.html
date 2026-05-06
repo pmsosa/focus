@@ -140,6 +140,17 @@
     <div class="settings-divider"></div>
 
     <div class="settings-section">
+      <div class="settings-section-label">brain dump inbox</div>
+      <div class="size-options">
+        <button class="size-option" id="inboxOn" onclick="setInboxEnabled(true)">on</button>
+        <button class="size-option" id="inboxOff" onclick="setInboxEnabled(false)">off</button>
+      </div>
+      <p class="settings-note">Always-first section for quick capture. Press ⌘I to add a task directly.</p>
+    </div>
+
+    <div class="settings-divider"></div>
+
+    <div class="settings-section">
       <div class="settings-section-label">data</div>
       <div class="data-actions">
         <button class="data-btn export-btn" onclick="exportData()">↑ export backup</button>

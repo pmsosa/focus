@@ -262,3 +262,17 @@
 
 .section.section-collapsed { min-height: 0; }
 .section.section-collapsed .section-header { border-bottom: none; }
+
+/* Inbox section */
+body.inbox-disabled .inbox-section { display: none; }
+
+.inbox-section {
+  border-style: dashed;
+  border-color: var(--border-light);
+}
+.inbox-section:hover { border-color: var(--accent); }
+.inbox-section .section-title-input {
+  color: var(--text-muted);
+  cursor: default;
+}
+.inbox-section .section-title-input::placeholder { color: var(--text-dim); }

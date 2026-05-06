@@ -1,5 +1,5 @@
 // ── Settings ───────────────────────────────────────────────────────────
-let appSettings = { theme: 'midnight-ember', font: 'DM Mono', fontSize: 13, windowSize: 'medium' };
+let appSettings = { theme: 'midnight-ember', font: 'DM Mono', fontSize: 13, windowSize: 'medium', inboxEnabled: true };
 
 function loadSettings() {
   try {
@@ -19,6 +19,7 @@ function applySettings() {
   document.body.setAttribute('data-theme', appSettings.theme);
   applyDynamicStyles();
   updateSettingsUI();
+  if (typeof applyInboxVisibility === 'function') applyInboxVisibility();
 }
 
 function applyDynamicStyles() {
@@ -65,6 +66,8 @@ function updateSettingsUI() {
   document.querySelectorAll('.wsize-option').forEach(el => {
     el.classList.toggle('active', el.dataset.wsize === appSettings.windowSize);
   });
+  document.getElementById('inboxOn')?.classList.toggle('active', !!appSettings.inboxEnabled);
+  document.getElementById('inboxOff')?.classList.toggle('active', !appSettings.inboxEnabled);
 }
 
 function setTheme(name) {
@@ -157,6 +160,9 @@ function loadSaved() {
     if (!raw) return false;
     const data = JSON.parse(raw);
     if (!Array.isArray(data) || data.length === 0) return false;
+    if (!data.find(s => s.id === INBOX_ID)) {
+      data.unshift({ id: INBOX_ID, title: 'inbox', tasks: [], collapsed: false, color: null, archivedTasks: [] });
+    }
     data.forEach(s => {
       if (!s.archivedTasks) s.archivedTasks = [];
       sections.push(s);
