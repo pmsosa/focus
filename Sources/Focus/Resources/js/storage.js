@@ -1,5 +1,5 @@
 // ── Settings ───────────────────────────────────────────────────────────
-let appSettings = { theme: 'midnight-ember', font: 'DM Mono', fontSize: 13, windowSize: 'medium', inboxEnabled: true };
+let appSettings = { theme: 'midnight-ember', font: 'DM Mono', fontSize: 13, windowSize: 'medium', inboxEnabled: false };
 
 function loadSettings() {
   try {
