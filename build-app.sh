@@ -95,6 +95,18 @@ if [ -n "$BUMP" ]; then
 fi
 
 # ── Helpers ────────────────────────────────────────────────────────────
+# Resolve a signing identity's full common name from the keychain by matching
+# a cert-type prefix ($1, e.g. "Developer ID Application") and the team ID.
+# codesign/productbuild match on the common name, and the bare team ID is
+# ambiguous when several cert types share it — so we resolve the exact name.
+resolve_identity() {
+  local prefix="$1"
+  security find-identity -v \
+    | grep "$prefix" | grep "$APPLE_TEAM_ID" \
+    | head -1 \
+    | sed -E 's/^[^"]*"(.*)"[^"]*$/\1/'
+}
+
 make_dmg() {
   local dmg_path="$1"
   local staging
@@ -257,16 +269,35 @@ if [ "$MAS" = true ]; then
     echo "    Review $ENTITLEMENTS before submitting."
   fi
 
-  echo "==> Signing for Mac App Store..."
+  # Modern MAS uses "Apple Distribution"; older setups use "3rd Party Mac
+  # Developer Application". Try the modern name first, fall back to the legacy.
+  APP_SIGN_ID="$(resolve_identity "Apple Distribution")"
+  if [ -z "$APP_SIGN_ID" ]; then
+    APP_SIGN_ID="$(resolve_identity "3rd Party Mac Developer Application")"
+  fi
+  INSTALLER_SIGN_ID="$(resolve_identity "3rd Party Mac Developer Installer")"
+  if [ -z "$INSTALLER_SIGN_ID" ]; then
+    INSTALLER_SIGN_ID="$(resolve_identity "Apple Distribution Installer")"
+  fi
+  if [ -z "$APP_SIGN_ID" ] || [ -z "$INSTALLER_SIGN_ID" ]; then
+    echo "Error: missing MAS signing identities for team $APPLE_TEAM_ID."
+    echo "  Need an app-signing cert (Apple Distribution / 3rd Party Mac Developer Application)"
+    echo "  and an installer cert (3rd Party Mac Developer Installer / Apple Distribution Installer)."
+    echo "  Available identities:"
+    security find-identity -v | sed 's/^/    /'
+    exit 1
+  fi
+
+  echo "==> Signing for Mac App Store as: $APP_SIGN_ID"
   codesign --deep --force \
-    --sign "3rd Party Mac Developer Application: $APPLE_TEAM_ID" \
+    --sign "$APP_SIGN_ID" \
     --entitlements "$ENTITLEMENTS" \
     "$APP"
 
   PKG_PATH="$DIST/${PRODUCT_NAME}-${VERSION}.pkg"
-  echo "==> Creating and signing MAS PKG..."
+  echo "==> Creating and signing MAS PKG as: $INSTALLER_SIGN_ID"
   productbuild --component "$APP" /Applications \
-    --sign "3rd Party Mac Developer Installer: $APPLE_TEAM_ID" \
+    --sign "$INSTALLER_SIGN_ID" \
     "$PKG_PATH"
 
   echo ""
@@ -289,9 +320,17 @@ elif [ "$SIGN" = true ]; then
     echo "    Review $ENTITLEMENTS before submitting."
   fi
 
-  echo "==> Signing app bundle..."
+  SIGN_ID="$(resolve_identity "Developer ID Application")"
+  if [ -z "$SIGN_ID" ]; then
+    echo "Error: no 'Developer ID Application' identity for team $APPLE_TEAM_ID found in your keychain."
+    echo "  Available identities:"
+    security find-identity -v -p codesigning | sed 's/^/    /'
+    exit 1
+  fi
+
+  echo "==> Signing app bundle as: $SIGN_ID"
   codesign --deep --force --options runtime \
-    --sign "Developer ID Application: $APPLE_TEAM_ID" \
+    --sign "$SIGN_ID" \
     --entitlements "$ENTITLEMENTS" \
     "$APP"
 

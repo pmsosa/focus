@@ -123,11 +123,17 @@ class FocusWindow: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
     // MARK: – HTML
 
     private func loadHTML() {
-        guard let resourcesURL = Bundle.module.resourceURL?.appendingPathComponent("Resources"),
-              let url = Bundle.module.url(forResource: "Resources/index", withExtension: "html") else {
+        guard let url = Bundle.module.url(forResource: "Resources/index", withExtension: "html") else {
+            NSLog("Focus: could not locate Resources/index.html in bundle \(Bundle.module.bundlePath)")
             return
         }
-        webView.loadFileURL(url, allowingReadAccessTo: resourcesURL)
+        // Grant read access to the *resolved* directory that actually contains
+        // index.html and its sibling js/css. Deriving it from `url` (rather than
+        // rebuilding it from Bundle.module.resourceURL) guarantees both paths
+        // share one canonical base — otherwise the WebContent helper's sandbox
+        // extension covers a slightly different path and file loads fail (-3001).
+        let readAccessURL = url.deletingLastPathComponent()
+        webView.loadFileURL(url, allowingReadAccessTo: readAccessURL)
     }
 
     // MARK: – Show / Hide
@@ -181,6 +187,16 @@ class FocusWindow: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
     var isVisible: Bool { window.isVisible }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        NSLog("Focus: navigation failed: \(error.localizedDescription)")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            self?.loadHTML()
+        }
+    }
+
+    // Fires when the load never even started (e.g. file could not be opened).
+    // Without this, such failures are silent and the window renders blank.
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        NSLog("Focus: provisional navigation failed: \(error.localizedDescription)")
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
             self?.loadHTML()
         }
