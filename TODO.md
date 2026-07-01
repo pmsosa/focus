@@ -17,7 +17,7 @@ No build step. No framework. Changes to Swift files are needed only where noted.
 | FEAT-06 | Archive sweep                  | Medium     | ✅ Done        |
 | FEAT-07 | Drag task → Today panel        | Medium     | ✅ Done        |
 | FEAT-08 | Quick search / filter          | Medium     | ✅ Done        |
-| FEAT-09 | Drag to reorder tasks/sections | Medium     | 🔄 Partial     |
+| FEAT-09 | Drag to reorder tasks/sections | Medium     | ✅ Done        |
 | FEAT-10 | Brain dump inbox               | Medium     | ✅ Done        |
 | FEAT-11 | Section templates              | Medium     | — Backlog      |
 | FEAT-12 | Task aging on the board        | Medium     | ✅ Done        |
@@ -349,36 +349,25 @@ No build step. No framework. Changes to Swift files are needed only where noted.
 
 ---
 
-## FEAT-09 — Reorder tasks and sections 🔄 Partial
+## FEAT-09 — Reorder tasks and sections ✅ Done
 
-**What:** Tasks within a section can be reordered. Sections on the board can be reordered. Order persists via localStorage.
+**What:** Tasks within a section can be reordered, sections on the board can be reordered, and tasks can be dragged across sections. Order persists via localStorage.
 
-**Status:** Drag-and-drop was implemented but kept breaking in WKWebView — the native drag API conflicts with text input selection and the whole thing was more pain than it was worth. Replaced with ↑/↓ arrow buttons on tasks and sections for now. Gets the job done. We'll revisit proper drag later if it's actually missed.
+**Status:** Shipped with **pointer events**, not the native HTML5 drag API. The native API kept breaking in WKWebView — `dragstart` gets swallowed near text inputs and fights the browser's own text-selection drag — so it was abandoned. The ↑/↓ arrow-button fallback has been removed now that drag is solid.
 
-**Current implementation (↑/↓ arrows):**
-- Each task has ↑ ↓ buttons in its action area — calls `moveTask(sectionId, taskId, dir)`
-- Each section has ↑ ↓ buttons in the header meta area — calls `moveSection(sectionId, dir)`
-- Both are undo-aware via `takeSnapshot()`
+**Implementation (`js/drag.js`):**
 
-**Future (drag-and-drop, revisit later):**
+- A **⠿ grip handle** on each section header (non-inbox) and each task row starts a drag via `startSectionDrag` / `startTaskDrag`. Everything runs through a shared `pointerdown` → `pointermove` → `pointerup` engine.
+- A **5px movement threshold** distinguishes a click from a drag, so text editing in inputs is untouched. `-webkit-user-select` is disabled on card chrome (re-enabled on inputs) so a mis-grab doesn't start a text highlight.
+- `elementFromPoint` under the cursor resolves the drop target; a fixed-position `.drop-indicator` line shows where the item will land (before/after the target's vertical midpoint).
+- **Sections** reorder by re-sequencing the existing DOM nodes in place (no `fullRerender`, so no entrance-animation flicker). Inbox stays pinned at index 0.
+- **Tasks** reorder within a section and move across sections; only the affected list(s) re-render. A moved task keeps its Today membership (its `todayItems` entry's `sectionId` is updated).
+- All drops are undo-aware via `takeSnapshot()` (Cmd+Z).
+- Bonus: dragging a task onto the **Today panel** adds it there (revived the previously-dead FEAT-07 native-DnD path through the same engine).
 
-Use the native HTML Drag and Drop API with a drop-indicator line rather than a library.
+**Layout dependency:** required reworking the board from two hard-coded columns (`board-col-0/1` + `index % 2` distribution) to a single flex-wrap `#board` where a section's DOM position equals its array index — that's what makes reorder a simple array splice.
 
-**Task reordering (within a section):**
-
-1. In `renderTask`, set `draggable="true"` on `.task-item` and track `dragstart` (store `taskId` and `sectionId`).
-2. On `.task-list` (the drop target), track `dragover`: calculate which task the cursor is above/below using `getBoundingClientRect`, insert a 1px `.drop-line` indicator div at that position.
-3. On `drop`: splice the task from its old index to the new index in `sec.tasks`, re-render the task list for that section, save.
-
-**Section reordering:**
-
-1. Make `.section` elements draggable. The drag handle should be the section header (add `-webkit-app-region: no-drag` so it doesn't conflict with the window drag region on the topbar).
-2. On `#board` `dragover`: calculate which column the cursor is nearest to, show a drop indicator.
-3. On `drop`: splice `sections` array, call `fullRerender()` (see FEAT-01), save.
-
-**Note:** WKWebView has a known issue where `dragstart` on elements near text inputs gets swallowed or conflicts with the browser's own text-selection drag. A dedicated drag handle (⠿) helps but doesn't fully solve it. May need to use mouse events manually instead of the native drag API.
-
-**Files:** `js/render.js`, `js/interactions.js`, `js/drag.js`.
+**Files:** `js/drag.js`, `js/render.js`, `js/state.js`, `styles/layout.css`, `index.html`.
 
 ---
 

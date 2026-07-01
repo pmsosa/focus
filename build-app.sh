@@ -10,12 +10,40 @@ fi
 SIGN=false
 MAS=false
 DEV=false
+RELEASE=false
+DRAFT=false
 
 for arg in "$@"; do
   case $arg in
-    --sign) SIGN=true ;;
-    --mas)  MAS=true ;;
-    --dev)  DEV=true ;;
+    --sign)    SIGN=true ;;
+    --mas)     MAS=true ;;
+    --dev)     DEV=true ;;
+    --release) RELEASE=true ;;
+    --draft)   DRAFT=true ;;
+    -h|--help)
+      echo "Usage: ./build-app.sh [flag]"
+      echo ""
+      echo "  (no flag)  Build unsigned DMG — local testing only. Users will see an"
+      echo "             'unidentified developer' warning."
+      echo ""
+      echo "  --dev      Build and run the app locally (no bundle/DMG)."
+      echo ""
+      echo "  --sign     Build signed + notarized DMG for distribution."
+      echo "             Requires: APPLE_ID, APPLE_APP_SPECIFIC_PASSWORD, APPLE_TEAM_ID"
+      echo ""
+      echo "  --mas      Build Mac App Store PKG (signed with MAS certs)."
+      echo "             Requires: APPLE_TEAM_ID, build/embedded.provisionprofile"
+      echo "             Upload the resulting .pkg with the Transporter app."
+      echo ""
+      echo "  --release  Create a GitHub release for the current version and upload the"
+      echo "             matching DMG from dist/ as a downloadable asset."
+      echo "             Requires: gh CLI authenticated (gh auth login)."
+      echo "             Add --draft to create the release as an unpublished draft."
+      echo "             Build the DMG first (e.g. ./build-app.sh --sign)."
+      echo ""
+      echo "  -h, --help Show this help message."
+      exit 0
+      ;;
   esac
 done
 
@@ -69,6 +97,39 @@ EOENT
 </plist>
 EOENT
 }
+
+# ── GitHub release ─────────────────────────────────────────────────────
+if [ "$RELEASE" = true ]; then
+  TAG="v${VERSION}"
+  DMG_PATH="$DIST/${PRODUCT_NAME}-${VERSION}.dmg"
+
+  if [ ! -f "$DMG_PATH" ]; then
+    echo "Error: DMG not found at $DMG_PATH"
+    echo "  Build it first with: ./build-app.sh --sign"
+    exit 1
+  fi
+
+  if git rev-parse "$TAG" >/dev/null 2>&1; then
+    echo "Error: tag $TAG already exists. Bump VERSION or delete the tag."
+    exit 1
+  fi
+
+  DRAFT_FLAG=""
+  if [ "$DRAFT" = true ]; then
+    DRAFT_FLAG="--draft"
+    echo "==> Creating DRAFT release $TAG..."
+  else
+    echo "==> Creating release $TAG..."
+  fi
+
+  gh release create "$TAG" "$DMG_PATH" \
+    --title "${PRODUCT_NAME} ${VERSION}" \
+    --generate-notes \
+    $DRAFT_FLAG
+
+  echo "==> Done."
+  exit 0
+fi
 
 # ── Dev run ────────────────────────────────────────────────────────────
 if [ "$DEV" = true ]; then
