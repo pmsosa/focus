@@ -211,6 +211,16 @@ mkdir -p "$DIST"
 cp "$BINARY" "$APP/Contents/MacOS/$PRODUCT_NAME"
 cp -r "$BUNDLE" "$APP/Contents/Resources/"
 
+ICON_KEY=""
+if [ -f "build/AppIcon.icns" ]; then
+  cp "build/AppIcon.icns" "$APP/Contents/Resources/AppIcon.icns"
+  ICON_KEY="
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>"
+else
+  echo "    Note: build/AppIcon.icns not found — building without a custom app icon."
+fi
+
 CATEGORY_KEY=""
 if [ "$MAS" = true ]; then
   CATEGORY_KEY="
@@ -242,7 +252,7 @@ cat > "$APP/Contents/Info.plist" << EOF
     <key>NSHighResolutionCapable</key>
     <true/>
     <key>LSMinimumSystemVersion</key>
-    <string>13.0</string>$CATEGORY_KEY
+    <string>13.0</string>$ICON_KEY$CATEGORY_KEY
 </dict>
 </plist>
 EOF
