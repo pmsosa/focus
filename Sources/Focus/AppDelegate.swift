@@ -16,12 +16,25 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    /// The tangerine "ƒ" glyph used in the menu bar, loaded from the app bundle.
+    private static func menuBarImage() -> NSImage? {
+        guard let url = Bundle.module.url(forResource: "Resources/menubar", withExtension: "png"),
+              let image = NSImage(contentsOf: url) else {
+            // Fall back to a system symbol if the asset is missing.
+            return NSImage(systemSymbolName: "checkmark.square", accessibilityDescription: "Focus")
+        }
+        return image
+    }
+
     private func setupStatusBar() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
 
         if let button = statusItem.button {
-            button.image = NSImage(systemSymbolName: "checkmark.square", accessibilityDescription: "Focus")
-            button.image?.isTemplate = true
+            let image = AppDelegate.menuBarImage()
+            image?.size = NSSize(width: 18, height: 18)
+            // Keep the tangerine color (a template image would be recolored monochrome).
+            image?.isTemplate = false
+            button.image = image
         }
 
         let menu = NSMenu()
@@ -68,7 +81,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             """
         alert.alertStyle = .informational
         alert.addButton(withTitle: "OK")
-        alert.icon = NSImage(systemSymbolName: "checkmark.square", accessibilityDescription: nil)
+        alert.icon = NSApp.applicationIconImage ?? AppDelegate.menuBarImage()
 
         NSApp.setActivationPolicy(.regular)
         NSApp.activate(ignoringOtherApps: true)
