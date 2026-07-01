@@ -49,7 +49,8 @@ while [ $# -gt 0 ]; do
       echo "             Requires: gh CLI authenticated (gh auth login)."
       echo "             Add --draft to create the release as an unpublished draft."
       echo "             Build the DMG first (e.g. ./build-app.sh --sign)."
-      echo "             Auto-bumps the patch version after a successful publish."
+      echo "             After publishing, bumps the patch version, then commits"
+      echo "             and pushes the bump automatically (unless --draft)."
       echo ""
       echo "  --bump <part>  Bump the version in the VERSION file and exit."
       echo "             <part> is major, minor, or patch (e.g. --bump minor)."
@@ -183,7 +184,22 @@ if [ "$RELEASE" = true ]; then
   NEXT_VERSION="$(bump_version "$VERSION" patch)"
   echo "$NEXT_VERSION" > "$VERSION_FILE"
   echo "==> Released $TAG. Bumped VERSION to $NEXT_VERSION for the next build."
-  echo "    Commit the VERSION bump when you're ready: git add VERSION && git commit -m \"chore: bump to $NEXT_VERSION\""
+
+  # Auto-commit and push the version bump. A draft release is not final, so
+  # leave the bump uncommitted in that case for you to review first.
+  if [ "$DRAFT" = true ]; then
+    echo "    Draft release — VERSION bump left uncommitted. Commit it when you publish."
+  else
+    echo "==> Committing version bump..."
+    git add "$VERSION_FILE"
+    git commit -m "chore: bump to $NEXT_VERSION"
+    echo "==> Pushing..."
+    if git push && git push --tags; then
+      echo "==> Done. $TAG released and pushed."
+    else
+      echo "    Push failed (no upstream/remote?). Commit is local — run 'git push' manually."
+    fi
+  fi
   exit 0
 fi
 
