@@ -12,14 +12,23 @@ MAS=false
 DEV=false
 RELEASE=false
 DRAFT=false
+BUMP=""
 
-for arg in "$@"; do
-  case $arg in
+while [ $# -gt 0 ]; do
+  case $1 in
     --sign)    SIGN=true ;;
     --mas)     MAS=true ;;
     --dev)     DEV=true ;;
     --release) RELEASE=true ;;
     --draft)   DRAFT=true ;;
+    --bump)
+      BUMP="$2"
+      shift
+      case "$BUMP" in
+        major|minor|patch) ;;
+        *) echo "Error: --bump requires major, minor, or patch."; exit 1 ;;
+      esac
+      ;;
     -h|--help)
       echo "Usage: ./build-app.sh [flag]"
       echo ""
@@ -40,18 +49,50 @@ for arg in "$@"; do
       echo "             Requires: gh CLI authenticated (gh auth login)."
       echo "             Add --draft to create the release as an unpublished draft."
       echo "             Build the DMG first (e.g. ./build-app.sh --sign)."
+      echo "             Auto-bumps the patch version after a successful publish."
+      echo ""
+      echo "  --bump <part>  Bump the version in the VERSION file and exit."
+      echo "             <part> is major, minor, or patch (e.g. --bump minor)."
       echo ""
       echo "  -h, --help Show this help message."
       exit 0
       ;;
   esac
+  shift
 done
 
 BUNDLE_ID="com.focus.app"
 PRODUCT_NAME="Focus"
-VERSION="1.0"
+VERSION_FILE="$(pwd)/VERSION"
+VERSION="$(cat "$VERSION_FILE" 2>/dev/null | tr -d '[:space:]')"
+if [ -z "$VERSION" ]; then
+  echo "Error: no version found. Create a VERSION file (e.g. 'echo 1.0.0 > VERSION')."
+  exit 1
+fi
 DIST="$(pwd)/dist"
 APP="$DIST/$PRODUCT_NAME.app"
+
+# Bump a semver string ($1) by part ($2: major|minor|patch), print the result.
+bump_version() {
+  local v="$1" part="$2"
+  local major minor patch
+  IFS='.' read -r major minor patch <<< "$v"
+  major=${major:-0}; minor=${minor:-0}; patch=${patch:-0}
+  case "$part" in
+    major) major=$((major + 1)); minor=0; patch=0 ;;
+    minor) minor=$((minor + 1)); patch=0 ;;
+    patch) patch=$((patch + 1)) ;;
+  esac
+  echo "${major}.${minor}.${patch}"
+}
+
+# ── Bump only ──────────────────────────────────────────────────────────
+if [ -n "$BUMP" ]; then
+  NEW_VERSION="$(bump_version "$VERSION" "$BUMP")"
+  echo "$NEW_VERSION" > "$VERSION_FILE"
+  echo "==> Bumped version: $VERSION -> $NEW_VERSION"
+  exit 0
+fi
 
 # ── Helpers ────────────────────────────────────────────────────────────
 make_dmg() {
@@ -127,7 +168,10 @@ if [ "$RELEASE" = true ]; then
     --generate-notes \
     $DRAFT_FLAG
 
-  echo "==> Done."
+  NEXT_VERSION="$(bump_version "$VERSION" patch)"
+  echo "$NEXT_VERSION" > "$VERSION_FILE"
+  echo "==> Released $TAG. Bumped VERSION to $NEXT_VERSION for the next build."
+  echo "    Commit the VERSION bump when you're ready: git add VERSION && git commit -m \"chore: bump to $NEXT_VERSION\""
   exit 0
 fi
 
