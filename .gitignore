@@ -41,3 +41,6 @@ build/embedded.provisionprofile
 initial_idea.md
 # Generated marketing site (build_site.sh output)
 site/
+
+# Local App Store submission notes (personal, not for the repo)
+APPSTORE.md
