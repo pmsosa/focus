@@ -442,9 +442,7 @@ function removeSection(sectionId) {
   const sec = sections.find(s => s.id === sectionId);
   if (sec) sec.tasks.forEach(t => { if (isInToday(t.id)) removeFromToday(t.id); });
   sections = sections.filter(s => s.id !== sectionId);
-  document.querySelector(`.section[data-id="${sectionId}"]`)?.remove();
-  updateEmptyState();
-  updateSummary();
+  fullRerender();
   save();
 }
 

@@ -1,7 +1,8 @@
 // ── Render Section ────────────────────────────────────────────────────
 function renderSection(section) {
   const isInbox = section.id === INBOX_ID;
-  const colIndex = sections.indexOf(section) % 2;
+  const userSections = sections.filter(s => s.id !== INBOX_ID);
+  const colIndex = isInbox ? 0 : userSections.indexOf(section) % 2;
   const board = document.getElementById(`board-col-${colIndex}`) || document.getElementById('board');
   const el = document.createElement('div');
   el.className = 'section' + (isInbox ? ' inbox-section' : '');
