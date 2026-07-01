@@ -66,6 +66,7 @@ class FocusWindow: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
 
         let config = WKWebViewConfiguration()
         config.websiteDataStore = .default()
+        config.preferences.setValue(true, forKey: "developerExtrasEnabled")
         config.userContentController.add(self, name: "focusBridge")
 
         webView = FocusWebView(frame: NSRect(x: 0, y: 0, width: sz.width, height: sz.height), configuration: config)
@@ -92,6 +93,15 @@ class FocusWindow: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
         if type == "resize", let sizeName = body["size"] as? String {
             DispatchQueue.main.async { [weak self] in
                 self?.applyWindowSize(sizeName)
+            }
+        }
+
+        if type == "openInspector" {
+            DispatchQueue.main.async { [weak self] in
+                guard let wv = self?.webView else { return }
+                if let inspector = wv.value(forKey: "_inspector") as? NSObject {
+                    inspector.perform(NSSelectorFromString("show"))
+                }
             }
         }
     }

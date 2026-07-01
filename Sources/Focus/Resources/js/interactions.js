@@ -207,6 +207,7 @@ function addTask(sectionId, text = '', state = 'none', note = '', subtasks = [])
   if (!sec) return;
   const task = {
     id: uid(), text, state, note,
+    createdDate: todayStr(),
     subtasks: subtasks.map(st => ({ id: uid(), text: st.text || st, done: st.done || false }))
   };
   sec.tasks.push(task);
@@ -522,6 +523,29 @@ function clearArchive(sectionId) {
   save();
   showToast('Archive cleared');
 }
+
+// ── Task aging ────────────────────────────────────────────────────────
+function refreshStaleness() {
+  sections.forEach(sec => {
+    sec.tasks.forEach(task => {
+      const el = document.querySelector(`.task-item[data-id="${task.id}"]`);
+      if (!el) return;
+      const existing = el.querySelector('.staleness');
+      if (existing) existing.remove();
+      const ageDays = task.createdDate ? daysSince(task.createdDate) : 0;
+      if (ageDays >= STALE_AMBER_DAYS && task.state !== 'done') {
+        const span = document.createElement('span');
+        span.className = `staleness ${stalenessClass(ageDays)}`;
+        span.textContent = `+${ageDays}`;
+        el.querySelector('.task-actions').before(span);
+      }
+    });
+  });
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) refreshStaleness();
+});
 
 // ── Copy board as text ────────────────────────────────────────────────
 function copyBoardAsText() {

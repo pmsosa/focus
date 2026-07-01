@@ -52,6 +52,10 @@ function renderTask(sectionId, task) {
   el.dataset.id = task.id;
   el.dataset.section = sectionId;
   const noteVisible = (task.note && task.note.trim()) ? 'visible' : '';
+  const ageDays = task.createdDate ? daysSince(task.createdDate) : 0;
+  const ageHtml = (ageDays >= STALE_AMBER_DAYS && task.state !== 'done')
+    ? `<span class="staleness ${stalenessClass(ageDays)}">+${ageDays}</span>`
+    : '';
   el.innerHTML = `
     <div class="task-checkbox" data-state="${task.state}"
          onclick="event.stopPropagation(); cycleState('${sectionId}', '${task.id}', this)"
@@ -68,6 +72,7 @@ function renderTask(sectionId, task) {
              oninput="updateTaskNote('${sectionId}','${task.id}',this.value)">
       <div class="subtask-list" id="subtasks-${task.id}"></div>
     </div>
+    ${ageHtml}
     <div class="task-actions">
       <button class="task-action-btn task-move-btn" onclick="moveTask('${sectionId}','${task.id}',-1)" title="Move up">↑</button>
       <button class="task-action-btn task-move-btn" onclick="moveTask('${sectionId}','${task.id}',1)" title="Move down">↓</button>

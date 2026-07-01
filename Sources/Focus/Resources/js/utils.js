@@ -108,6 +108,13 @@ function escHtml(str) {
   return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+// ── Web inspector ──────────────────────────────────────────────────────
+function openWebInspector() {
+  try {
+    window.webkit.messageHandlers.focusBridge.postMessage({ type: 'openInspector' });
+  } catch (_) {}
+}
+
 // ── Toast ──────────────────────────────────────────────────────────────
 function showToast(msg) {
   const existing = document.querySelector('.toast');
