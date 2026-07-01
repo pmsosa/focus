@@ -200,19 +200,16 @@
 .section-progress-bar {
   height: 2px;
   background: transparent;
-  border-radius: 0 0 12px 12px;
+  border-radius: 2px;
   overflow: hidden;
-  margin-top: auto;
+  /* Inset from the edges so the fill never spills past the card's rounded corners */
+  margin: auto 14px 10px;
 }
 .section-progress-fill {
   height: 100%;
   background: linear-gradient(90deg, var(--done-color), #7ab07a);
-  border-radius: 0 0 0 12px;
+  border-radius: 2px;
   transition: width 0.4s ease;
-}
-.section-progress-fill[style*="width:100%"],
-.section-progress-fill[style*="width: 100%"] {
-  border-radius: 0 0 12px 12px;
 }
 
 /* Summary bar */

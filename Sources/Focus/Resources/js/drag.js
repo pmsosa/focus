@@ -112,7 +112,13 @@
     takeSnapshot();
     const [sec] = sections.splice(fromIdx, 1);
     sections.splice(insertAt, 0, sec);
-    fullRerender();
+    // Re-sequence the existing DOM nodes instead of rebuilding the board —
+    // rebuilding replays the card entrance animation and flickers.
+    const board = document.getElementById('board');
+    sections.forEach(s => {
+      const node = board.querySelector(`.section[data-id="${s.id}"]`);
+      if (node) { node.style.animation = 'none'; board.appendChild(node); }
+    });
     save();
   }
 
@@ -143,7 +149,14 @@
     // keep any Today entry pointing at the task's new section
     const ti = todayItems.find(t => t.taskId === d.id);
     if (ti) ti.sectionId = toSec.id;
-    fullRerender();
+    // Only touch the affected list(s) — avoids the full-board rebuild flicker.
+    rerenderTaskList(toSec.id);
+    updateProgress(toSec.id);
+    if (fromSec !== toSec) {
+      rerenderTaskList(fromSec.id);
+      updateProgress(fromSec.id);
+      rerenderTodayPanel();
+    }
     save();
   }
 

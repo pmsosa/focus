@@ -20,8 +20,6 @@ function renderSection(section) {
         <span class="progress-pill" id="pill-${section.id}">0 / 0</span>
         <button class="sweep-btn" id="sweep-${section.id}" onclick="sweepDone('${section.id}')" title="Archive done tasks (⌘⇧⌫)">↓</button>
         ${isInbox ? '' : `
-        <button class="section-move-btn" onclick="moveSection('${section.id}',-1)" title="Move up">↑</button>
-        <button class="section-move-btn" onclick="moveSection('${section.id}',1)" title="Move down">↓</button>
         <button class="section-menu-btn" onclick="removeSection('${section.id}')" title="Remove section">×</button>
         `}
       </div>
@@ -75,8 +73,6 @@ function renderTask(sectionId, task) {
     ${ageHtml}
     <div class="task-actions">
       <button class="task-action-btn drag-handle task-drag-handle" onpointerdown="startTaskDrag(event,'${sectionId}','${task.id}')" title="Drag to reorder">⠿</button>
-      <button class="task-action-btn task-move-btn" onclick="moveTask('${sectionId}','${task.id}',-1)" title="Move up">↑</button>
-      <button class="task-action-btn task-move-btn" onclick="moveTask('${sectionId}','${task.id}',1)" title="Move down">↓</button>
       <button class="task-action-btn" onclick="toggleNote('${task.id}')" title="Add note">≡</button>
       <button class="task-action-btn" onclick="addSubtask('${sectionId}','${task.id}')" title="Add sub-task">⊕</button>
       <button class="task-action-btn" onclick="removeTask('${sectionId}','${task.id}')" title="Remove">×</button>

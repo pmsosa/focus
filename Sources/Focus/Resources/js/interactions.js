@@ -384,35 +384,6 @@ function subtaskKeydown(e, sectionId, taskId, subtaskId) {
   if (e.key === 'Backspace' && e.target.value === '') { e.preventDefault(); removeSubtask(sectionId, taskId, subtaskId); }
 }
 
-// ── Reorder operations ────────────────────────────────────────────────
-function moveTask(sectionId, taskId, dir) {
-  const sec = sections.find(s => s.id === sectionId);
-  if (!sec) return;
-  const idx = sec.tasks.findIndex(t => t.id === taskId);
-  const newIdx = idx + dir;
-  if (newIdx < 0 || newIdx >= sec.tasks.length) return;
-  takeSnapshot();
-  const [task] = sec.tasks.splice(idx, 1);
-  sec.tasks.splice(newIdx, 0, task);
-  rerenderTaskList(sectionId);
-  save();
-}
-
-function moveSection(sectionId, dir) {
-  if (sectionId === INBOX_ID) return;
-  const idx = sections.findIndex(s => s.id === sectionId);
-  const newIdx = idx + dir;
-  if (newIdx < 0 || newIdx >= sections.length) return;
-  // Keep inbox pinned at position 0
-  const inboxIdx = sections.findIndex(s => s.id === INBOX_ID);
-  if (inboxIdx >= 0 && newIdx <= inboxIdx) return;
-  takeSnapshot();
-  const [sec] = sections.splice(idx, 1);
-  sections.splice(newIdx, 0, sec);
-  fullRerender();
-  save();
-}
-
 // ── Remove operations ──────────────────────────────────────────────────
 function removeTask(sectionId, taskId) {
   takeSnapshot();

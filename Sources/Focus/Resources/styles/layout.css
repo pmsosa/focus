@@ -129,7 +129,7 @@
   display: flex;
   flex-direction: column;
   min-height: 160px;
-  flex: 1 1 calc(50% - 7px);
+  flex: 0 1 calc(50% - 7px);
   min-width: 260px;
   transition: border-color 0.2s ease;
   animation: fadeUp 0.22s ease both;
@@ -156,7 +156,22 @@
 .section-drag-handle:hover { color: var(--text-muted); }
 .section.dragging,
 .task-item.dragging { opacity: 0.4; }
-body.is-dragging { cursor: grabbing; user-select: none; }
+body.is-dragging {
+  cursor: grabbing;
+  -webkit-user-select: none;
+  user-select: none;
+}
+/* Only real text lives in inputs — keep those selectable, mute the rest so
+   a mis-grab on the card chrome doesn't start a text highlight. */
+.section {
+  -webkit-user-select: none;
+  user-select: none;
+}
+.section input,
+.section textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}
 .drop-indicator {
   position: fixed;
   z-index: 9999;
@@ -257,19 +272,6 @@ body.is-dragging { cursor: grabbing; user-select: none; }
 .sweep-btn.visible { display: inline-flex; align-items: center; }
 .sweep-btn:hover { color: var(--text-muted); }
 
-.section-move-btn {
-  background: none;
-  border: none;
-  color: var(--text-dim);
-  cursor: pointer;
-  font-size: 13px;
-  padding: 2px 4px;
-  border-radius: 4px;
-  transition: color 0.15s;
-  line-height: 1;
-  flex-shrink: 0;
-}
-.section-move-btn:hover { color: var(--text-muted); }
 
 .color-dot-btn {
   width: 10px;
