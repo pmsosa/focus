@@ -67,11 +67,15 @@ nav {
 }
 
 .hero-logo {
-  width: 76px;
-  height: 76px;
+  width: 72px;
+  height: 72px;
   object-fit: contain;
-  margin-bottom: 0.75rem;
-  filter: drop-shadow(0 6px 20px rgba(0,0,0,0.25));
+  margin-bottom: 1rem;
+  /* White app-icon badge so the tangerine ƒ reads against the tangerine hero. */
+  background: #fff;
+  border-radius: 18px;
+  padding: 12px;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.22);
 }
 
 .hero h1 {
