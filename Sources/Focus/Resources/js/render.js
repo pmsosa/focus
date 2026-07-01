@@ -1,14 +1,13 @@
 // ── Render Section ────────────────────────────────────────────────────
 function renderSection(section) {
   const isInbox = section.id === INBOX_ID;
-  const userSections = sections.filter(s => s.id !== INBOX_ID);
-  const colIndex = isInbox ? 0 : userSections.indexOf(section) % 2;
-  const board = document.getElementById(`board-col-${colIndex}`) || document.getElementById('board');
+  const board = document.getElementById('board');
   const el = document.createElement('div');
   el.className = 'section' + (isInbox ? ' inbox-section' : '');
   el.dataset.id = section.id;
   el.innerHTML = `
     <div class="section-header">
+      ${isInbox ? '' : `<button class="drag-handle section-drag-handle" onpointerdown="startSectionDrag(event,'${section.id}')" title="Drag to reorder">⠿</button>`}
       <button class="collapse-btn" onclick="toggleCollapse('${section.id}')">▾</button>
       <button class="color-dot-btn ${section.color ? 'has-color' : ''}" id="cdot-${section.id}"
               onclick="cycleSectionColor('${section.id}')"
@@ -75,6 +74,7 @@ function renderTask(sectionId, task) {
     </div>
     ${ageHtml}
     <div class="task-actions">
+      <button class="task-action-btn drag-handle task-drag-handle" onpointerdown="startTaskDrag(event,'${sectionId}','${task.id}')" title="Drag to reorder">⠿</button>
       <button class="task-action-btn task-move-btn" onclick="moveTask('${sectionId}','${task.id}',-1)" title="Move up">↑</button>
       <button class="task-action-btn task-move-btn" onclick="moveTask('${sectionId}','${task.id}',1)" title="Move down">↓</button>
       <button class="task-action-btn" onclick="toggleNote('${task.id}')" title="Add note">≡</button>
@@ -267,10 +267,7 @@ function updateEmptyState() {
 
 // ── Full re-render ────────────────────────────────────────────────────
 function fullRerender() {
-  const col0 = document.getElementById('board-col-0');
-  const col1 = document.getElementById('board-col-1');
-  if (col0) col0.innerHTML = '';
-  if (col1) col1.innerHTML = '';
+  document.querySelectorAll('#board .section').forEach(el => el.remove());
   sections.forEach(s => { renderSection(s); renderArchiveToggle(s.id); });
   updateEmptyState();
   updateSummary();

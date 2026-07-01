@@ -121,13 +121,6 @@
   align-items: flex-start;
 }
 
-.board-col {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-
 /* Section cards */
 .section {
   background: var(--surface);
@@ -136,12 +129,44 @@
   display: flex;
   flex-direction: column;
   min-height: 160px;
+  flex: 1 1 calc(50% - 7px);
+  min-width: 260px;
   transition: border-color 0.2s ease;
   animation: fadeUp 0.22s ease both;
-  break-inside: avoid;
-  margin-bottom: 14px;
 }
 .section:hover { border-color: var(--border-light); }
+
+/* Drag to reorder */
+.drag-handle {
+  cursor: grab;
+  touch-action: none;
+  color: var(--text-dim);
+}
+.drag-handle:active { cursor: grabbing; }
+.section-drag-handle {
+  background: none;
+  border: none;
+  font-size: 12px;
+  padding: 2px 4px;
+  border-radius: 4px;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+.section-drag-handle:hover { color: var(--text-muted); }
+.section.dragging,
+.task-item.dragging { opacity: 0.4; }
+body.is-dragging { cursor: grabbing; user-select: none; }
+.drop-indicator {
+  position: fixed;
+  z-index: 9999;
+  height: 2px;
+  background: var(--accent);
+  border-radius: 2px;
+  box-shadow: 0 0 6px var(--accent);
+  pointer-events: none;
+  display: none;
+}
 .section.search-match { border-color: rgba(200,169,126,0.5); }
 [data-theme="terracotta-ceramics"] .section.search-match { border-color: rgba(196,98,58,0.5); }
 
