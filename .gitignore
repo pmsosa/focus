@@ -39,3 +39,5 @@ build/embedded.provisionprofile
 
 # Intial Idea
 initial_idea.md
+# Generated marketing site (build_site.sh output)
+site/

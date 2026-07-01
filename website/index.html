@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>focus. — Your work, in sections.</title>
+  <meta name="description" content="A lightweight macOS task dashboard that lives in your menu bar. Section-based to-dos, three-state tasks, and a global ⌥Space hotkey. Local-first, no account, no servers." />
+  <link rel="icon" type="image/png" href="assets/logo.png" />
+  <link rel="apple-touch-icon" href="assets/logo.png" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<nav>
+  <a class="nav-logo" href="index.html">
+    <img src="assets/logo.png" alt="focus logo" />
+    focus.
+  </a>
+  <div class="nav-links">
+    <a href="support.html">Support</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="https://github.com/pmsosa/focus" target="_blank" rel="noopener">GitHub</a>
+  </div>
+</nav>
+
+<!-- ── Hero ──────────────────────────────────────────────────── -->
+<section class="hero">
+  <img class="hero-logo" src="assets/logo.png" alt="focus" />
+  <h1>Your work, in sections.</h1>
+  <p class="tagline">
+    A lightweight macOS task dashboard that lives quietly in your menu bar.
+    Press <strong>⌥ Space</strong> anywhere to open it — no Dock icon, no context switch.
+  </p>
+  <div class="badge-row">
+    <img src="https://badgen.net/badge/license/BSD-3-Clause/orange" alt="BSD-3-Clause" />
+    <img src="https://badgen.net/badge/platform/macOS%2013+/black" alt="macOS 13+" />
+    <img src="https://badgen.net/badge/built%20with/Swift/f05138" alt="Built with Swift" />
+  </div>
+  <div class="btn-group">
+    <a class="btn btn-primary" href="https://github.com/pmsosa/focus/releases" target="_blank" rel="noopener">⬇ Download for macOS</a>
+    <a class="btn btn-secondary" href="https://github.com/pmsosa/focus" target="_blank" rel="noopener">★ View on GitHub</a>
+  </div>
+  <p class="req-note">Requires macOS 13 (Ventura) or later · Apple silicon</p>
+</section>
+
+<!-- ── Live demo ─────────────────────────────────────────────── -->
+<section class="demo">
+  <h2>Try it right here</h2>
+  <p class="demo-sub">
+    This is the real app running in your browser. Add a section, check tasks through
+    open → partial → done, right-click a task to send it to <em>today</em>, or open settings to
+    switch themes.
+  </p>
+
+  <div class="window-frame">
+    <div class="window-titlebar">
+      <span class="window-dot dot-red"></span>
+      <span class="window-dot dot-amber"></span>
+      <span class="window-dot dot-green"></span>
+      <span class="window-title">focus.</span>
+    </div>
+    <iframe
+      src="demo/"
+      title="focus. interactive preview"
+      loading="lazy"></iframe>
+  </div>
+
+  <p class="demo-note">
+    ▶ <strong>Live preview</strong> — the same HTML interface the native app runs. Your changes
+    here are saved only in this browser. 🔒 In the real app everything is stored locally on your
+    Mac; nothing is uploaded, ever.
+  </p>
+</section>
+
+<!-- ── Features ──────────────────────────────────────────────── -->
+<section class="features">
+  <h2>Built for how people actually work</h2>
+  <div class="features-grid">
+    <div class="feature-card">
+      <div class="icon">🗂️</div>
+      <h3>Sections, not pipelines</h3>
+      <p>One column per context — a project, a team, a domain. Not a shared "in progress" lane.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">◐</div>
+      <h3>Three-state tasks</h3>
+      <p>open → partial → done. Partial tasks carry a short "what's remaining" note so you never lose the thread.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">↳</div>
+      <h3>Subtasks</h3>
+      <p>Break a task into its moving parts when it needs them, and keep them tucked inside.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">🧠</div>
+      <h3>Brain-dump inbox</h3>
+      <p>An always-first section for quick capture. Press <strong>⌘I</strong> to drop in a thought instantly.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">☀️</div>
+      <h3>Today panel</h3>
+      <p>Right-click any task to pull it into a focused list for the day. It clears itself as you finish.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">⌨️</div>
+      <h3>⌥ Space, from anywhere</h3>
+      <p>A global hotkey opens and closes the panel over whatever you're doing. No app switching.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">🎨</div>
+      <h3>Themes &amp; fonts</h3>
+      <p>Midnight Ember or Terracotta Ceramics, five monospace typefaces, and three sizes.</p>
+    </div>
+    <div class="feature-card">
+      <div class="icon">🔒</div>
+      <h3>Local-first, no backend</h3>
+      <p>Everything is saved to your Mac. No account, no sign-up, no servers — and it's open source.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── Download ──────────────────────────────────────────────── -->
+<section class="download">
+  <h2>Get focus.</h2>
+  <p>Free and open-source under the BSD-3-Clause license. macOS 13 or later.</p>
+  <div class="dl-options">
+    <div class="dl-card">
+      <h3>Direct download</h3>
+      <p>A signed &amp; notarized <code>.dmg</code>. Drag to Applications and press ⌥ Space.</p>
+      <a class="btn" href="https://github.com/pmsosa/focus/releases" target="_blank" rel="noopener">Download .dmg</a>
+    </div>
+    <div class="dl-card">
+      <h3>Build from source</h3>
+      <p>Clone the repo and run <code>swift run</code>, or <code>./build-app.sh</code> for a bundle.</p>
+      <a class="btn ghost" href="https://github.com/pmsosa/focus" target="_blank" rel="noopener">View on GitHub</a>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ────────────────────────────────────────────────── -->
+<footer>
+  <div class="footer-links">
+    <a href="privacy.html">Privacy Policy</a>
+    <a href="support.html">Support</a>
+    <a href="https://github.com/pmsosa/focus" target="_blank" rel="noopener">GitHub</a>
+  </div>
+  <p>focus. is open-source software released under the <a href="https://github.com/pmsosa/focus/blob/main/LICENSE" target="_blank" rel="noopener">BSD-3-Clause License</a>.</p>
+</footer>
+
+</body>
+</html>
