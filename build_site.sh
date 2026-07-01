@@ -60,7 +60,16 @@ awk -v ins="$DEMO_BG" '/<\/head>/ && !done { print ins; done=1 } { print }' \
   "$OUT/demo/index.html" > "$tmp" && mv "$tmp" "$OUT/demo/index.html"
 ok "Demo bundled (backend-free, seeds sample board on first load)"
 
-# ── 3. Done ──────────────────────────────────────────────────────────────────
+# ── 3. Normalize permissions ─────────────────────────────────────────────────
+# scp -r preserves local permissions. mktemp above produces a 0600 file, which
+# a webserver (Apache/suEXEC) then refuses to serve → 403. Force the standard
+# static-hosting layout: 755 directories, 644 files, so any host will serve it.
+info "Normalizing permissions (755 dirs / 644 files) …"
+find "$OUT" -type d -exec chmod 755 {} +
+find "$OUT" -type f -exec chmod 644 {} +
+ok "Permissions normalized"
+
+# ── 4. Done ──────────────────────────────────────────────────────────────────
 echo ""
 ok "Site ready → ${BOLD}$OUT/${RESET}"
 echo -e "  ${DIM}Preview locally:${RESET}  python3 -m http.server -d $OUT 8000  ${DIM}→ http://localhost:8000${RESET}"
