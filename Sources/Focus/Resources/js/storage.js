@@ -32,14 +32,15 @@ function applyDynamicStyles() {
   const font = `'${appSettings.font}', monospace`;
   const sz = appSettings.fontSize;
   const sizeMap = {
-    12: { body: 12, task: 11,   note: 10,   sub: 10.5, ui: 10,   tiny: 9   },
-    13: { body: 13, task: 12,   note: 11,   sub: 11.5, ui: 11,   tiny: 10  },
-    15: { body: 15, task: 14,   note: 13,   sub: 13.5, ui: 12.5, tiny: 11.5 },
+    12: { body: 12, task: 11,   note: 10,   sub: 10.5, ui: 10,   tiny: 9,    title: 14 },
+    13: { body: 13, task: 12,   note: 11,   sub: 11.5, ui: 11,   tiny: 10,   title: 15 },
+    15: { body: 15, task: 14,   note: 13,   sub: 13.5, ui: 12.5, tiny: 11.5, title: 17 },
   };
   const s = sizeMap[sz] || sizeMap[13];
   style.textContent = `
     body, input, button, textarea { font-family: ${font}; }
     body { font-size: ${s.body}px; }
+    .section-title-input { font-size: ${s.title}px; }
     .task-text-input  { font-size: ${s.task}px;  font-family: ${font}; }
     .task-note-input  { font-size: ${s.note}px;  font-family: ${font}; }
     .subtask-input    { font-size: ${s.sub}px;   font-family: ${font}; }
@@ -51,6 +52,10 @@ function applyDynamicStyles() {
     .today-item-source, .staleness, .date-display,
     .settings-section-label, .summary-bar { font-size: ${s.tiny}px; font-family: ${font}; }
   `;
+  // Font family/size changes alter line metrics, so the auto-sized textareas
+  // (titles, tasks, notes, subtasks) need re-measuring. Their height changes
+  // trip the ResizeObserver, which re-flows the masonry board.
+  if (typeof growAllTextareas === 'function') requestAnimationFrame(growAllTextareas);
 }
 
 function updateSettingsUI() {
