@@ -38,6 +38,12 @@ function renderSection(section) {
   board.appendChild(el);
   section.tasks.forEach(t => renderTask(section.id, t));
   applyCollapse(section.id, section.collapsed ?? false);
+  _boardResizeObserver.observe(el);
+  // Retire the entrance animation once it plays. Re-parenting a node restarts
+  // its CSS animation, and layoutBoard re-parents cards into columns on every
+  // change — without this the whole board flickers through fadeUp on each move.
+  el.addEventListener('animationend', () => { el.style.animation = 'none'; }, { once: true });
+  scheduleLayout();
   if (!section.title && !isInbox) setTimeout(() => el.querySelector('.section-title-input').focus(), 50);
 }
 
@@ -260,6 +266,73 @@ function updateEmptyState() {
   const empty = document.getElementById('emptyState');
   if (empty) empty.style.display = sections.length === 0 ? 'flex' : 'none';
 }
+
+// ── Masonry column layout ─────────────────────────────────────────────
+// The board isn't a fixed grid: we compute how many columns fit the current
+// width and greedily drop each section (in array order) into the shortest
+// column. Collapsing or shrinking a card frees vertical space that later
+// cards roll up into. Order stays a single flat `sections` array, so drag
+// reorder is unaffected — it just re-runs the layout on commit.
+const BOARD_MIN_COL = 300; // min column width in px before dropping a column
+const BOARD_GAP = 14;      // keep in sync with the gap in layout.css .board
+let _layoutRAF = null;
+
+function scheduleLayout() {
+  if (_layoutRAF != null) return;
+  _layoutRAF = requestAnimationFrame(() => { _layoutRAF = null; layoutBoard(); });
+}
+
+function layoutBoard() {
+  const board = document.getElementById('board');
+  if (!board) return;
+
+  // Index every section card by id, wherever it currently lives.
+  const cards = new Map();
+  board.querySelectorAll('.section').forEach(el => cards.set(el.dataset.id, el));
+
+  // Nothing to lay out — tear the columns down so the empty state can span.
+  if (![...cards.keys()].length) {
+    board.querySelectorAll(':scope > .board-col').forEach(c => c.remove());
+    return;
+  }
+
+  // How many columns fit right now?
+  const width = board.clientWidth || 0;
+  const cols = Math.max(1, Math.floor((width + BOARD_GAP) / (BOARD_MIN_COL + BOARD_GAP)));
+
+  // Reconcile the column containers to that count.
+  const colEls = [...board.querySelectorAll(':scope > .board-col')];
+  while (colEls.length < cols) {
+    const c = document.createElement('div');
+    c.className = 'board-col';
+    board.appendChild(c);
+    colEls.push(c);
+  }
+  while (colEls.length > cols) colEls.pop().remove();
+
+  // Place each section (in array order) into whichever column is shortest.
+  // Only move a card that's actually out of position, so a settled board
+  // re-flows nothing and a single change moves only the affected cards.
+  const heights = new Array(cols).fill(0);
+  const lastInCol = new Array(cols).fill(null);
+  sections.forEach(sec => {
+    const el = cards.get(sec.id);
+    if (!el) return;
+    let min = 0;
+    for (let i = 1; i < cols; i++) if (heights[i] < heights[min]) min = i;
+    const anchor = lastInCol[min]; // the card el should follow (null = first)
+    if (el.parentNode !== colEls[min] || el.previousElementSibling !== anchor) {
+      anchor ? anchor.after(el) : colEls[min].prepend(el);
+    }
+    lastInCol[min] = el;
+    heights[min] += el.offsetHeight + BOARD_GAP;
+  });
+}
+
+// Any card whose height changes (collapse, add/remove task, notes, subtasks,
+// archive, staleness) triggers a re-layout so siblings roll up automatically.
+const _boardResizeObserver = new ResizeObserver(() => scheduleLayout());
+window.addEventListener('resize', scheduleLayout);
 
 // ── Full re-render ────────────────────────────────────────────────────
 function fullRerender() {

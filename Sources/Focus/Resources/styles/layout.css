@@ -116,9 +116,20 @@
 
 .board {
   display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
+  flex-direction: row;
   align-items: flex-start;
+  gap: 14px;
+}
+
+/* Masonry columns — count is computed in JS from the board width so cards
+   "roll up" into the shortest column instead of leaving gaps under a
+   collapsed card. Keep the gap in sync with BOARD_GAP in render.js. */
+.board-col {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
 }
 
 /* Section cards */
@@ -129,8 +140,6 @@
   display: flex;
   flex-direction: column;
   min-height: 160px;
-  flex: 0 1 calc(50% - 7px);
-  min-width: 260px;
   transition: border-color 0.2s ease;
   animation: fadeUp 0.22s ease both;
 }
