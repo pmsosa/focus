@@ -112,13 +112,9 @@
     takeSnapshot();
     const [sec] = sections.splice(fromIdx, 1);
     sections.splice(insertAt, 0, sec);
-    // Re-sequence the existing DOM nodes instead of rebuilding the board —
-    // rebuilding replays the card entrance animation and flickers.
-    const board = document.getElementById('board');
-    sections.forEach(s => {
-      const node = board.querySelector(`.section[data-id="${s.id}"]`);
-      if (node) { node.style.animation = 'none'; board.appendChild(node); }
-    });
+    // Re-flow the masonry columns from the new order. This moves the existing
+    // DOM nodes (no rebuild), so the card entrance animation doesn't replay.
+    scheduleLayout();
     save();
   }
 
