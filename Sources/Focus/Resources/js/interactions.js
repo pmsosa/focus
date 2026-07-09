@@ -144,6 +144,8 @@ function applyCollapse(sectionId, collapsed) {
   el.querySelector('.section-progress-bar').style.display = collapsed ? 'none' : '';
   el.querySelector('.collapse-btn').textContent = collapsed ? '▸' : '▾';
   el.classList.toggle('section-collapsed', collapsed);
+  // Fields can't be measured while hidden, so re-grow them once revealed.
+  if (!collapsed) el.querySelectorAll('.task-text-input, .task-note-input.visible, .subtask-input').forEach(autoGrow);
   const archiveEl = document.getElementById(`archive-section-${sectionId}`);
   if (archiveEl) {
     if (collapsed) {
@@ -234,6 +236,7 @@ function setTaskState(sectionId, taskId, checkbox, next) {
     const noteInput = boardItem.querySelector('.task-note-input');
     if (noteInput && next === 'half' && !noteInput.classList.contains('visible')) {
       noteInput.classList.add('visible');
+      autoGrow(noteInput);
     }
   }
 
@@ -300,8 +303,16 @@ function toggleNote(taskId) {
   const note = document.querySelector(`.task-note-input[data-id="${taskId}"]`);
   if (note) {
     note.classList.toggle('visible');
-    if (note.classList.contains('visible')) note.focus();
+    if (note.classList.contains('visible')) { autoGrow(note); note.focus(); }
   }
+}
+
+// Enter shouldn't insert a newline in these single-line-ish fields — commit + blur.
+function titleKeydown(e) {
+  if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); }
+}
+function noteKeydown(e) {
+  if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); }
 }
 
 // ── Today done section toggle ──────────────────────────────────────────

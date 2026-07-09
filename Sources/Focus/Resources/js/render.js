@@ -12,10 +12,10 @@ function renderSection(section) {
       <button class="color-dot-btn ${section.color ? 'has-color' : ''}" id="cdot-${section.id}"
               onclick="cycleSectionColor('${section.id}')"
               style="background:${section.color || 'transparent'}"></button>
-      <input class="section-title-input" placeholder="section name…"
-             value="${escHtml(section.title)}"
+      <textarea class="section-title-input" placeholder="section name…" rows="1"
              ${isInbox ? 'readonly' : ''}
-             oninput="updateSectionTitle('${section.id}', this.value)">
+             oninput="updateSectionTitle('${section.id}', this.value); autoGrow(this)"
+             onkeydown="titleKeydown(event)">${escHtml(section.title)}</textarea>
       <div class="section-meta">
         <span class="progress-pill" id="pill-${section.id}">0 / 0</span>
         <button class="sweep-btn" id="sweep-${section.id}" onclick="sweepDone('${section.id}')" title="Archive done tasks (⌘⇧⌫)">↓</button>
@@ -36,6 +36,7 @@ function renderSection(section) {
     </div>
   `;
   board.appendChild(el);
+  autoGrow(el.querySelector('.section-title-input'));
   section.tasks.forEach(t => renderTask(section.id, t));
   applyCollapse(section.id, section.collapsed ?? false);
   _boardResizeObserver.observe(el);
@@ -65,15 +66,15 @@ function renderTask(sectionId, task) {
          onclick="event.stopPropagation(); cycleState('${sectionId}', '${task.id}', this)"
          oncontextmenu="cycleStatePartial(event,'${sectionId}','${task.id}',this)"></div>
     <div class="task-content">
-      <input class="task-text-input" data-state="${task.state}"
-             value="${escHtml(task.text)}" placeholder="task…"
-             oninput="updateTaskText('${sectionId}','${task.id}',this.value)"
-             onkeydown="taskKeydown(event,'${sectionId}','${task.id}')">
-      <input class="task-note-input ${noteVisible}"
-             value="${escHtml(task.note || '')}"
+      <textarea class="task-text-input" data-state="${task.state}" rows="1"
+             placeholder="task…"
+             oninput="updateTaskText('${sectionId}','${task.id}',this.value); autoGrow(this)"
+             onkeydown="taskKeydown(event,'${sectionId}','${task.id}')">${escHtml(task.text)}</textarea>
+      <textarea class="task-note-input ${noteVisible}" rows="1"
              placeholder="what's remaining…"
              data-id="${task.id}"
-             oninput="updateTaskNote('${sectionId}','${task.id}',this.value)">
+             oninput="updateTaskNote('${sectionId}','${task.id}',this.value); autoGrow(this)"
+             onkeydown="noteKeydown(event)">${escHtml(task.note || '')}</textarea>
       <div class="subtask-list" id="subtasks-${task.id}"></div>
     </div>
     ${ageHtml}
@@ -91,6 +92,8 @@ function renderTask(sectionId, task) {
     }
   });
   list.appendChild(el);
+  autoGrow(el.querySelector('.task-text-input'));
+  autoGrow(el.querySelector('.task-note-input'));
   task.subtasks.forEach(st => renderSubtask(task.id, st, sectionId));
   if (!task.text) setTimeout(() => el.querySelector('.task-text-input').focus(), 30);
 }
@@ -105,12 +108,13 @@ function renderSubtask(taskId, subtask, sectionId) {
   el.innerHTML = `
     <div class="subtask-dot" data-done="${subtask.done}"
          onclick="toggleSubtask('${sectionId}','${taskId}','${subtask.id}',this)"></div>
-    <input class="subtask-input" data-done="${subtask.done}"
-           value="${escHtml(subtask.text)}" placeholder="sub-task…"
-           oninput="updateSubtaskText('${sectionId}','${taskId}','${subtask.id}',this.value)"
-           onkeydown="subtaskKeydown(event,'${sectionId}','${taskId}','${subtask.id}')">
+    <textarea class="subtask-input" data-done="${subtask.done}" rows="1"
+           placeholder="sub-task…"
+           oninput="updateSubtaskText('${sectionId}','${taskId}','${subtask.id}',this.value); autoGrow(this)"
+           onkeydown="subtaskKeydown(event,'${sectionId}','${taskId}','${subtask.id}')">${escHtml(subtask.text)}</textarea>
   `;
   list.appendChild(el);
+  autoGrow(el.querySelector('.subtask-input'));
   if (!subtask.text) setTimeout(() => el.querySelector('.subtask-input').focus(), 30);
 }
 
@@ -276,6 +280,11 @@ function updateEmptyState() {
 const BOARD_MIN_COL = 300; // min column width in px before dropping a column
 const BOARD_GAP = 14;      // keep in sync with the gap in layout.css .board
 let _layoutRAF = null;
+let _lastColWidth = 0;     // detects when column width changes → re-grow textareas
+
+function growAllTextareas() {
+  document.querySelectorAll('#board .section textarea').forEach(autoGrow);
+}
 
 function scheduleLayout() {
   if (_layoutRAF != null) return;
@@ -327,6 +336,17 @@ function layoutBoard() {
     lastInCol[min] = el;
     heights[min] += el.offsetHeight + BOARD_GAP;
   });
+
+  // Cards are now in their final columns at their final width. If that width
+  // changed (resize / column-count change), fields wrap differently, so their
+  // auto-grown heights are stale — re-grow them. The resulting height changes
+  // trip the ResizeObserver, which re-runs this layout once more with correct
+  // heights, then settles (width unchanged → this block is skipped).
+  const colWidth = colEls[0].clientWidth;
+  if (Math.abs(colWidth - _lastColWidth) > 0.5) {
+    _lastColWidth = colWidth;
+    growAllTextareas();
+  }
 }
 
 // Any card whose height changes (collapse, add/remove task, notes, subtasks,

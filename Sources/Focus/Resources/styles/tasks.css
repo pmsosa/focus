@@ -72,6 +72,23 @@
   gap: 2px;
 }
 
+/* Auto-growing text fields — <textarea>s styled to read like plain text so
+   long content wraps instead of clipping. Height is set in JS (autoGrow). */
+.section-title-input,
+.task-text-input,
+.task-note-input,
+.subtask-input {
+  resize: none;
+  overflow: hidden;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+  height: auto;
+  min-height: 0;
+}
+
 .task-text-input {
   background: none;
   border: none;

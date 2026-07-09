@@ -108,6 +108,15 @@ function escHtml(str) {
   return (str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 }
 
+// Grow an auto-sizing textarea to fit its content. Skips hidden fields
+// (collapsed section / unopened note) — measuring those yields 0 and would
+// wrongly clamp them; they're re-grown when shown.
+function autoGrow(el) {
+  if (!el || el.offsetParent === null) return;
+  el.style.height = 'auto';
+  el.style.height = el.scrollHeight + 'px';
+}
+
 // ── Web inspector ──────────────────────────────────────────────────────
 function openWebInspector() {
   try {
