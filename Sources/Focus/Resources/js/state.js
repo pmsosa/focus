@@ -4,6 +4,9 @@ const INBOX_ID = 'inbox';
 // ── State ──────────────────────────────────────────────────────────────
 let sections = [];
 let todayItems = []; // [{taskId, sectionId, addedDate: 'YYYY-MM-DD'}]
+let currentPanelTab = 'today'; // 'today' | 'week'
+
+const WEEK_VIEW_DAYS = 7; // rolling window shown in the week panel
 
 const SECTION_COLORS = [null, '#c8a97e', '#7ab07a', '#7a9ab0', '#b07a9a', '#b0a07a', '#7ab0a0', '#b08a7a'];
 

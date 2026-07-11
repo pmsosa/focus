@@ -210,6 +210,7 @@ function addTask(sectionId, text = '', state = 'none', note = '', subtasks = [])
   const task = {
     id: uid(), text, state, note,
     createdDate: todayStr(),
+    completedDate: state === 'done' ? todayStr() : null,
     subtasks: subtasks.map(st => ({ id: uid(), text: st.text || st, done: st.done || false }))
   };
   sec.tasks.push(task);
@@ -223,7 +224,14 @@ function addTask(sectionId, text = '', state = 'none', note = '', subtasks = [])
 function setTaskState(sectionId, taskId, checkbox, next) {
   const sec = sections.find(s => s.id === sectionId);
   const task = sec?.tasks.find(t => t.id === taskId);
-  if (task) task.state = next;
+  const prev = task?.state;
+  if (task) {
+    task.state = next;
+    // Stamp/clear the completion date so the week view (derived from this
+    // field) stays in sync with un-completing, renaming, and re-completing.
+    if (next === 'done' && prev !== 'done') task.completedDate = todayStr();
+    else if (next !== 'done') task.completedDate = null;
+  }
 
   checkbox.dataset.state = next;
 
@@ -243,6 +251,7 @@ function setTaskState(sectionId, taskId, checkbox, next) {
   updateProgress(sectionId);
   updateSummary();
   if (isInToday(taskId)) rerenderTodayPanel();
+  refreshWeekIfActive();
   save();
 }
 
@@ -405,6 +414,7 @@ function removeTask(sectionId, taskId) {
   if (isInToday(taskId)) removeFromToday(taskId);
   updateProgress(sectionId);
   updateSummary();
+  refreshWeekIfActive();
   save();
 }
 
@@ -440,6 +450,7 @@ function updateTaskText(sectionId, taskId, val) {
   if (task) {
     task.text = val;
     if (isInToday(taskId)) rerenderTodayPanel();
+    refreshWeekIfActive(); // week view reads task text live, so reflect renames
     save();
   }
 }
@@ -500,6 +511,7 @@ function clearArchive(sectionId) {
   if (!sec) return;
   sec.archivedTasks = [];
   renderArchiveToggle(sectionId);
+  refreshWeekIfActive(); // cleared archive drops those completions from history
   save();
   showToast('Archive cleared');
 }

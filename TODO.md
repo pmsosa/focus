@@ -24,7 +24,7 @@ No build step. No framework. Changes to Swift files are needed only where noted.
 | FEAT-13 | Focus timer (Pomodoro)         | High       | — Backlog      |
 | FEAT-14 | End-of-day summary             | High       | — Backlog      |
 | FEAT-15 | Daily standup generator        | High       | — Backlog      |
-| FEAT-16 | Rolling week view              | High       | — Backlog      |
+| FEAT-16 | Rolling week view              | High       | ✅ Done        |
 
 ---
 
@@ -556,11 +556,13 @@ No build step. No framework. Changes to Swift files are needed only where noted.
 
 ---
 
-## FEAT-16 — Rolling week view
+## FEAT-16 — Rolling week view ✅ Done
 
 **What:** A second panel tab (alongside "today") labeled "week" that shows a 7-day history of completed tasks, grouped by day. Each day shows which tasks were done. Helps with weekly reviews and gives a sense of momentum.
 
-**How:**
+**Shipped:** Instead of the FEAT-15 snapshot log (which isn't built), the week view is **derived** from a `completedDate` field stamped on each task when it flips to `done` and cleared when un-completed. Grouping scans active + archived tasks by that date. This keeps the view self-consistent for free: un-completing removes it, renaming reflects live (text is read from the task, not a snapshot), re-completing stays a single entry, and undo works because `completedDate` lives in the task model. Clearing an archive drops those completions from history. A `refreshWeekIfActive()` hook re-renders the panel on the relevant mutations while the week tab is open.
+
+**How (original plan — kept for reference; superseded by the derived approach above):**
 
 This feature builds on the daily task log introduced in FEAT-15.
 

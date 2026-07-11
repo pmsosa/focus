@@ -47,7 +47,11 @@
   </div>
   <div class="today-panel" id="todayPanel">
     <div class="today-header">
-      <span class="today-title">today</span>
+      <div class="panel-tabs">
+        <button class="panel-tab active" id="tab-today" onclick="switchTab('today')">today</button>
+        <span class="panel-tab-sep">/</span>
+        <button class="panel-tab" id="tab-week" onclick="switchTab('week')">past week</button>
+      </div>
       <span class="today-badge" id="todayBadge" style="display:none"></span>
     </div>
     <div class="today-list" id="todayList">
@@ -55,6 +59,7 @@
         <p class="today-empty-hint">right-click any task<br>to add it here</p>
       </div>
     </div>
+    <div class="week-panel" id="weekPanel" style="display:none"></div>
     <div class="today-done-section" id="todayDoneSection" style="display:none">
       <button class="today-done-toggle" onclick="toggleTodayDone()">
         <span class="today-done-chevron" id="todayDoneChevron">▶</span>

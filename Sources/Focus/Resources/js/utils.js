@@ -4,9 +4,12 @@ function uid() {
 }
 
 // ── Date utilities ─────────────────────────────────────────────────────
-function todayStr() {
-  const d = new Date();
+function fmtDate(d) {
   return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function todayStr() {
+  return fmtDate(new Date());
 }
 
 function daysSince(dateStr) {

@@ -147,7 +147,7 @@ function rerenderTodayPanel() {
   }
 
   if (badge) {
-    if (todayItems.length === 0) {
+    if (currentPanelTab !== 'today' || todayItems.length === 0) {
       badge.style.display = 'none';
     } else if (active.length === 0) {
       badge.textContent = 'all done';
@@ -166,9 +166,79 @@ function rerenderTodayPanel() {
     });
   }
   if (doneSection) {
-    doneSection.style.display = done.length > 0 ? '' : 'none';
+    doneSection.style.display = (currentPanelTab === 'today' && done.length > 0) ? '' : 'none';
     const countEl = document.getElementById('todayDoneCount');
     if (countEl) countEl.textContent = done.length;
+  }
+}
+
+// ── Week panel (rolling 7-day history) ─────────────────────────────────
+function switchTab(tab) {
+  currentPanelTab = tab;
+  const isWeek = tab === 'week';
+  document.getElementById('tab-today')?.classList.toggle('active', !isWeek);
+  document.getElementById('tab-week')?.classList.toggle('active', isWeek);
+  const todayList = document.getElementById('todayList');
+  const weekPanel = document.getElementById('weekPanel');
+  if (todayList) todayList.style.display = isWeek ? 'none' : '';
+  if (weekPanel) weekPanel.style.display = isWeek ? '' : 'none';
+  if (isWeek) {
+    // The done section and "N left" badge belong to the today view only.
+    const doneSection = document.getElementById('todayDoneSection');
+    if (doneSection) doneSection.style.display = 'none';
+    const badge = document.getElementById('todayBadge');
+    if (badge) badge.style.display = 'none';
+    renderWeekPanel();
+  } else {
+    rerenderTodayPanel();
+  }
+}
+
+function refreshWeekIfActive() {
+  if (currentPanelTab === 'week') renderWeekPanel();
+}
+
+// Group completed-task text by completion date. Derived live from the task
+// model (active + archived) rather than a snapshot log, so un-completing,
+// renaming, and re-completing all stay consistent automatically.
+function completionsByDate() {
+  const byDate = {};
+  const add = t => {
+    if (!t.completedDate) return;
+    (byDate[t.completedDate] ||= []).push((t.text || '').trim() || '(untitled)');
+  };
+  sections.forEach(sec => {
+    sec.tasks.forEach(t => { if (t.state === 'done') add(t); });
+    (sec.archivedTasks || []).forEach(add); // archived entries are all completed
+  });
+  return byDate;
+}
+
+function renderWeekPanel() {
+  const panel = document.getElementById('weekPanel');
+  if (!panel) return;
+  const byDate = completionsByDate();
+  panel.innerHTML = '';
+  for (let i = 0; i < WEEK_VIEW_DAYS; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const key = fmtDate(d);
+    const label = i === 0 ? 'today'
+      : i === 1 ? 'yesterday'
+      : d.toLocaleDateString('en', { weekday: 'short', month: 'short', day: 'numeric' });
+    const tasks = byDate[key] || [];
+    const dayEl = document.createElement('div');
+    dayEl.className = 'week-day' + (tasks.length ? '' : ' week-day-empty');
+    dayEl.innerHTML = `
+      <div class="week-day-header">
+        <span class="week-day-label">${label}</span>
+        ${tasks.length ? `<span class="week-day-count">${tasks.length}</span>` : ''}
+      </div>
+      ${tasks.length
+        ? tasks.map(t => `<div class="week-task">✓ ${escHtml(t)}</div>`).join('')
+        : '<div class="week-task week-empty">—</div>'}
+    `;
+    panel.appendChild(dayEl);
   }
 }
 
@@ -362,6 +432,7 @@ function fullRerender() {
   updateSummary();
   rerenderTodayPanel();
   syncAllTodayIndicators();
+  refreshWeekIfActive();
 }
 
 function rerenderTaskList(sectionId) {
