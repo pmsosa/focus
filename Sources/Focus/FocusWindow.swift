@@ -282,6 +282,22 @@ class FocusWindow: NSObject, WKNavigationDelegate, WKScriptMessageHandler, WKUID
 
     var isVisible: Bool { window.isVisible }
 
+    // Links to external sites (e.g. the About section's GitHub link) must open in
+    // the user's browser — otherwise WKWebView would navigate away from the app's
+    // local page and replace it with the remote site. Let the initial file:// load
+    // and in-page fragments through; hand http(s) off to the default browser.
+    func webView(_ webView: WKWebView,
+                 decidePolicyFor navigationAction: WKNavigationAction,
+                 decisionHandler: @escaping (WKNavigationActionPolicy) -> Void) {
+        if let url = navigationAction.request.url,
+           url.scheme == "http" || url.scheme == "https" {
+            NSWorkspace.shared.open(url)
+            decisionHandler(.cancel)
+            return
+        }
+        decisionHandler(.allow)
+    }
+
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
         NSLog("Focus: navigation failed: \(error.localizedDescription)")
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in

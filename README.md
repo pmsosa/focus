@@ -81,4 +81,4 @@ The UI is vanilla HTML/CSS/JS rendered inside a native `WKWebView` — no JavaSc
 
 ## License
 
-BSD 3-Clause — see [LICENSE](LICENSE). If you use this code, a credit is appreciated.
+PolyForm Noncommercial License 1.0.0 — free for personal and other noncommercial use. See [LICENSE](LICENSE). Commercial use requires a separate license from the author. If you use this code, a credit is appreciated.

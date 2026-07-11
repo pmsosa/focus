@@ -72,4 +72,4 @@ Open a GitHub issue with:
 
 ## License
 
-By contributing you agree your code will be released under the [BSD 3-Clause License](LICENSE).
+By contributing you agree your code will be released under the [PolyForm Noncommercial License 1.0.0](LICENSE), and that the author may also license the project (including your contribution) commercially.
