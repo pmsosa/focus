@@ -15,7 +15,7 @@ focus. is a section-based to-do app inspired by the way a lot of people actually
 - **Three-state tasks** — open → partial (with a "what's remaining" note) → done
 - **Subtasks** for when a task has moving parts
 - **Today & past-week panels** — pull tasks into a focused "today" list, then look back on the last 7 days of what you finished
-- **⌥ Space** to open and close from anywhere — no Dock icon, no context switch
+- **⌥ Space** to open and close from anywhere — no Dock icon, no context switch (remappable in Settings › shortcut)
 - **Fully local & private** — everything is saved on your machine (localStorage); no accounts, no network requests, no telemetry
 
 ---

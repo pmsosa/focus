@@ -1,12 +1,20 @@
 // ── Settings ───────────────────────────────────────────────────────────
-let appSettings = { theme: 'terracotta-ceramics', font: 'DM Mono', fontSize: 13, windowSize: 'medium', inboxEnabled: false };
+// hotkey holds the Carbon values the native side needs to RegisterEventHotKey:
+// keyCode is a macOS virtual key code, modifiers is a Carbon modifier mask, and
+// label is the display string (e.g. "⌥ Space"). Default is ⌥ Space.
+const DEFAULT_HOTKEY = { keyCode: 49, modifiers: 2048, label: '⌥ Space' };
+let appSettings = { theme: 'terracotta-ceramics', font: 'DM Mono', fontSize: 13, windowSize: 'medium', inboxEnabled: false, hotkey: { ...DEFAULT_HOTKEY } };
 
 function loadSettings() {
   try {
     const raw = localStorage.getItem('focus-settings-v1');
     if (raw) Object.assign(appSettings, JSON.parse(raw));
   } catch(e) {}
+  if (!appSettings.hotkey) appSettings.hotkey = { ...DEFAULT_HOTKEY };
   applySettings();
+  // Reconcile the native registration with our stored binding on boot — covers
+  // a fresh install and any drift (e.g. an imported backup with a custom key).
+  pushHotkeyToNative();
 }
 
 function saveSettings() {
@@ -73,6 +81,7 @@ function updateSettingsUI() {
   });
   document.getElementById('inboxOn')?.classList.toggle('active', !!appSettings.inboxEnabled);
   document.getElementById('inboxOff')?.classList.toggle('active', !appSettings.inboxEnabled);
+  if (typeof updateHotkeyUI === 'function') updateHotkeyUI();
 }
 
 function setTheme(name) {
@@ -102,6 +111,119 @@ function setWindowSize(name) {
   } catch(e) {}
 }
 
+// ── Global hotkey ──────────────────────────────────────────────────────
+// Map a KeyboardEvent.code to its macOS virtual key code (kVK_*). Letters,
+// digits, and Space cover the intended "one modifier + a key" bindings.
+const HOTKEY_VKEYS = {
+  KeyA:0, KeyS:1, KeyD:2, KeyF:3, KeyH:4, KeyG:5, KeyZ:6, KeyX:7, KeyC:8, KeyV:9,
+  KeyB:11, KeyQ:12, KeyW:13, KeyE:14, KeyR:15, KeyY:16, KeyT:17, KeyO:31, KeyU:32,
+  KeyI:34, KeyP:35, KeyL:37, KeyJ:38, KeyK:40, KeyN:45, KeyM:46,
+  Digit1:18, Digit2:19, Digit3:20, Digit4:21, Digit6:22, Digit5:23, Digit9:25,
+  Digit7:26, Digit8:28, Digit0:29, Space:49,
+};
+// Carbon modifier masks (Events.h), and how each renders in a shortcut label.
+const HOTKEY_MODS = [
+  { name: 'ctrl',  mask: 4096, glyph: '⌃', on: e => e.ctrlKey },
+  { name: 'opt',   mask: 2048, glyph: '⌥', on: e => e.altKey },
+  { name: 'shift', mask: 512,  glyph: '⇧', on: e => e.shiftKey },
+  { name: 'cmd',   mask: 256,  glyph: '⌘', on: e => e.metaKey },
+];
+
+let _hotkeyRecording = false;
+const HOTKEY_HINT = 'Global shortcut to open focus. Click, then hold ⌘, ⌥, or ⌃ and press a key.';
+
+function keyLabel(code) {
+  if (code === 'Space') return 'Space';
+  if (code.startsWith('Key')) return code.slice(3);
+  if (code.startsWith('Digit')) return code.slice(5);
+  return code;
+}
+
+function pushHotkeyToNative() {
+  const h = appSettings.hotkey || DEFAULT_HOTKEY;
+  try {
+    window.webkit.messageHandlers.focusBridge.postMessage(
+      { type: 'hotkey', keyCode: h.keyCode, modifiers: h.modifiers, label: h.label }
+    );
+  } catch(e) {}
+}
+
+function updateHotkeyUI() {
+  const btn = document.getElementById('hotkeyRecordBtn');
+  if (!btn) return;
+  if (_hotkeyRecording) {
+    btn.textContent = 'press keys…';
+    btn.classList.add('recording');
+  } else {
+    btn.textContent = (appSettings.hotkey || DEFAULT_HOTKEY).label;
+    btn.classList.remove('recording');
+  }
+  const note = document.getElementById('hotkeyNote');
+  if (note && !_hotkeyRecording) { note.textContent = HOTKEY_HINT; note.classList.remove('hotkey-error'); }
+}
+
+function toggleHotkeyRecording() {
+  _hotkeyRecording ? stopHotkeyRecording() : startHotkeyRecording();
+}
+
+function startHotkeyRecording() {
+  _hotkeyRecording = true;
+  updateHotkeyUI();
+  document.addEventListener('keydown', onHotkeyKeydown, true);
+  // The native window swallows Esc to close itself before JS sees it, and an
+  // outside click hides the window too — either would otherwise leave the
+  // recorder armed. Cancel on blur so reopening starts clean.
+  window.addEventListener('blur', stopHotkeyRecording, { once: true });
+}
+
+function stopHotkeyRecording() {
+  _hotkeyRecording = false;
+  document.removeEventListener('keydown', onHotkeyKeydown, true);
+  window.removeEventListener('blur', stopHotkeyRecording, { once: true });
+  updateHotkeyUI();
+}
+
+function hotkeyError(msg) {
+  const note = document.getElementById('hotkeyNote');
+  if (note) { note.textContent = msg; note.classList.add('hotkey-error'); }
+}
+
+function onHotkeyKeydown(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  // Escape cancels; a lone modifier just means "keep waiting" for the real key.
+  const modifierCodes = ['ControlLeft','ControlRight','AltLeft','AltRight','ShiftLeft','ShiftRight','MetaLeft','MetaRight'];
+  if (e.code === 'Escape') { stopHotkeyRecording(); return; }
+  if (modifierCodes.includes(e.code)) return;
+
+  const vkey = HOTKEY_VKEYS[e.code];
+  if (vkey === undefined) { hotkeyError('Use a letter, number, or Space for the key.'); return; }
+
+  // Require a "real" modifier (⌘/⌥/⌃) so we never bind a bare key or Shift+key —
+  // either would hijack normal typing system-wide.
+  const hasRealMod = e.metaKey || e.altKey || e.ctrlKey;
+  if (!hasRealMod) { hotkeyError('Add ⌘, ⌥, or ⌃ to the key.'); return; }
+
+  const mods = HOTKEY_MODS.filter(m => m.on(e));
+  const modifiers = mods.reduce((sum, m) => sum + m.mask, 0);
+  const label = mods.map(m => m.glyph).join(' ') + ' ' + keyLabel(e.code);
+
+  stopHotkeyRecording();
+  setHotkey(vkey, modifiers, label);
+}
+
+function setHotkey(keyCode, modifiers, label) {
+  appSettings.hotkey = { keyCode, modifiers, label };
+  saveSettings();
+  updateHotkeyUI();
+  pushHotkeyToNative();
+}
+
+function resetHotkey() {
+  if (_hotkeyRecording) stopHotkeyRecording();
+  setHotkey(DEFAULT_HOTKEY.keyCode, DEFAULT_HOTKEY.modifiers, DEFAULT_HOTKEY.label);
+}
+
 function openSettings() {
   document.getElementById('settingsPanel').classList.add('open');
   document.getElementById('settingsOverlay').classList.add('open');
@@ -109,6 +231,7 @@ function openSettings() {
 }
 
 function closeSettings() {
+  if (_hotkeyRecording) stopHotkeyRecording();
   document.getElementById('settingsPanel').classList.remove('open');
   document.getElementById('settingsOverlay').classList.remove('open');
 }

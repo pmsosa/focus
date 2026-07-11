@@ -143,6 +143,17 @@
     <div class="settings-divider"></div>
 
     <div class="settings-section">
+      <div class="settings-section-label">shortcut</div>
+      <div class="hotkey-row">
+        <button class="hotkey-record-btn" id="hotkeyRecordBtn" onclick="toggleHotkeyRecording()">⌥ Space</button>
+        <button class="hotkey-reset-btn" id="hotkeyResetBtn" onclick="resetHotkey()">reset</button>
+      </div>
+      <p class="settings-note" id="hotkeyNote">Global shortcut to open focus. Click, then hold ⌘, ⌥, or ⌃ and press a key.</p>
+    </div>
+
+    <div class="settings-divider"></div>
+
+    <div class="settings-section">
       <div class="settings-section-label">brain dump inbox</div>
       <div class="size-options">
         <button class="size-option" id="inboxOn" onclick="setInboxEnabled(true)">on</button>

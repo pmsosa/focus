@@ -14,6 +14,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         hotkey = GlobalHotkey { [weak self] in
             self?.toggleWindow()
         }
+
+        // Let the in-app settings rebind the global hotkey live.
+        focusWindow.onHotkeyChange = { [weak self] keyCode, modifiers, label in
+            self?.hotkey.update(keyCode: keyCode, modifiers: modifiers, label: label)
+        }
     }
 
     /// The tangerine "ƒ" glyph used in the menu bar, loaded from the app bundle.
@@ -75,7 +80,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             Your work, in sections.
 
             A lightweight task dashboard that lives quietly in your menu bar. \
-            Press ⌥Space anywhere to open or close it.
+            Press \(GlobalHotkey.currentLabel) anywhere to open or close it.
 
             Tasks are saved automatically.
             """

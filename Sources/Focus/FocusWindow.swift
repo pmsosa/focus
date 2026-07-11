@@ -34,6 +34,10 @@ class FocusWindow: NSObject, WKNavigationDelegate, WKScriptMessageHandler, WKUID
     private var escapeMonitor: Any?
     private var isPresentingPanel = false
 
+    /// Invoked when the settings UI rebinds the global hotkey. AppDelegate wires
+    /// this to the GlobalHotkey instance, which re-registers and persists it.
+    var onHotkeyChange: ((UInt32, UInt32, String) -> Void)?
+
     private static let sizeKey = "focus-window-size"
 
     override init() {
@@ -96,6 +100,15 @@ class FocusWindow: NSObject, WKNavigationDelegate, WKScriptMessageHandler, WKUID
         if type == "resize", let sizeName = body["size"] as? String {
             DispatchQueue.main.async { [weak self] in
                 self?.applyWindowSize(sizeName)
+            }
+        }
+
+        if type == "hotkey",
+           let keyCode = body["keyCode"] as? Int,
+           let modifiers = body["modifiers"] as? Int {
+            let label = body["label"] as? String ?? ""
+            DispatchQueue.main.async { [weak self] in
+                self?.onHotkeyChange?(UInt32(keyCode), UInt32(modifiers), label)
             }
         }
 
