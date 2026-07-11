@@ -165,15 +165,9 @@ document.addEventListener('contextmenu', e => e.preventDefault());
 loadSettings();
 
 if (!loadSaved()) {
+  // Fresh install: start clean. The empty state guides the first section.
+  // The inbox is opt-in (Settings › brain dump inbox), so only create it
+  // when the user has already enabled it.
   handleDayRollover();
-  ensureInbox();
-  const s1 = addSection('Operations');
-  addTask(s1, 'Review vendor contracts', 'done');
-  addTask(s1, 'Update team handbook', 'half', 'missing onboarding section');
-  addTask(s1, 'Schedule Q2 retro');
-
-  const s2 = addSection('People');
-  addTask(s2, '1:1s this week');
-  addTask(s2, 'Mid-cycle reviews', 'half', '3 of 5 written');
-  addTask(s2, 'Async update to leadership', 'done');
+  if (appSettings.inboxEnabled) ensureInbox();
 }

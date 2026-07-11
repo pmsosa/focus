@@ -106,7 +106,6 @@ function openSettings() {
   document.getElementById('settingsPanel').classList.add('open');
   document.getElementById('settingsOverlay').classList.add('open');
   updateSettingsUI();
-  flushDevLog();
 }
 
 function closeSettings() {
@@ -149,6 +148,14 @@ function importData(input) {
   };
   reader.readAsText(file);
   input.value = '';
+}
+
+// ── Reset ──────────────────────────────────────────────────────────────
+// Wipe all persisted state and reload into a clean first-run board.
+function resetAllData() {
+  if (!confirm('Clear all data?\n\nThis erases every section, task, and setting and starts you fresh. It cannot be undone.')) return;
+  try { localStorage.clear(); } catch(e) {}
+  window.location.reload();
 }
 
 // ── Persistence ────────────────────────────────────────────────────────
