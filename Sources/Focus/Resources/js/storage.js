@@ -115,19 +115,25 @@ function closeSettings() {
 
 // ── Data import / export ───────────────────────────────────────────────
 function exportData() {
-  const data = {
-    sections,
-    todayItems,
-    settings: appSettings,
-    exportedAt: new Date().toISOString()
-  };
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const json = JSON.stringify(
+    { sections, todayItems, settings: appSettings, exportedAt: new Date().toISOString() },
+    null, 2
+  );
+  const filename = `focus-backup-${todayStr()}.json`;
+  // Native path: WKWebView can't trigger a browser download, so hand the bytes
+  // to the app, which writes them via a save panel.
+  if (window.webkit?.messageHandlers?.focusBridge) {
+    window.webkit.messageHandlers.focusBridge.postMessage({ type: 'export', filename, data: json });
+    return;
+  }
+  // Browser fallback.
+  const blob = new Blob([json], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `focus-backup-${todayStr()}.json`;
+  a.download = filename;
   a.click();
-  URL.revokeObjectURL(url);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 function importData(input) {
