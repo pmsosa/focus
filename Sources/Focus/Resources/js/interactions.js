@@ -434,7 +434,16 @@ function removeSection(sectionId) {
   const sec = sections.find(s => s.id === sectionId);
   if (sec) sec.tasks.forEach(t => { if (isInToday(t.id)) removeFromToday(t.id); });
   sections = sections.filter(s => s.id !== sectionId);
-  fullRerender();
+  // Remove only this section's card and let layoutBoard reflow the survivors.
+  // A fullRerender would recreate every card, restarting each one's fadeUp
+  // entrance animation — that's the flash we're avoiding here.
+  const el = document.querySelector(`.section[data-id="${sectionId}"]`);
+  if (el) { _boardResizeObserver.unobserve(el); el.remove(); }
+  updateEmptyState();
+  updateSummary();
+  rerenderTodayPanel();
+  refreshWeekIfActive();
+  scheduleLayout();
   save();
 }
 
