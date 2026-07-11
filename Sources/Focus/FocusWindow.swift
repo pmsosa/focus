@@ -1,5 +1,6 @@
 import Cocoa
 import WebKit
+import UniformTypeIdentifiers
 
 private class KeyableWindow: NSWindow {
     override var canBecomeKey: Bool { true }
@@ -26,11 +27,12 @@ private struct WinSize {
     }
 }
 
-class FocusWindow: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
+class FocusWindow: NSObject, WKNavigationDelegate, WKScriptMessageHandler, WKUIDelegate {
     private var window: NSWindow!
     private var webView: FocusWebView!
     private var outsideClickMonitor: Any?
     private var escapeMonitor: Any?
+    private var isPresentingPanel = false
 
     private static let sizeKey = "focus-window-size"
 
@@ -71,6 +73,7 @@ class FocusWindow: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
 
         webView = FocusWebView(frame: NSRect(x: 0, y: 0, width: sz.width, height: sz.height), configuration: config)
         webView.navigationDelegate = self
+        webView.uiDelegate = self
         webView.setValue(false, forKey: "drawsBackground")
         webView.wantsLayer = true
         webView.layer?.cornerRadius = 16
@@ -104,6 +107,15 @@ class FocusWindow: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
                 }
             }
         }
+
+        // WKWebView can't trigger a browser download, so the page hands us the
+        // backup bytes and we write them via a save panel.
+        if type == "export", let data = body["data"] as? String {
+            let name = body["filename"] as? String ?? "focus-backup.json"
+            DispatchQueue.main.async { [weak self] in
+                self?.saveExport(data: data, suggestedName: name)
+            }
+        }
     }
 
     private func applyWindowSize(_ sizeName: String) {
@@ -118,6 +130,88 @@ class FocusWindow: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
             ctx.timingFunction = CAMediaTimingFunction(name: .easeInEaseOut)
             window.animator().setFrame(newFrame, display: true)
         }
+    }
+
+    // MARK: – Panels (export / import / JS dialogs)
+
+    // The window floats above everything (level .floating); a file panel at the
+    // normal level would render *behind* it. Drop the level while a panel is up,
+    // and flag it so the outside-click / escape monitors don't dismiss us.
+    private func beginPanel() {
+        isPresentingPanel = true
+        window.level = .normal
+    }
+
+    private func endPanel() {
+        window.level = .floating
+        isPresentingPanel = false
+    }
+
+    private func alert(fromJSMessage message: String) -> NSAlert {
+        let alert = NSAlert()
+        let parts = message.components(separatedBy: "\n\n")
+        alert.messageText = parts.first ?? message
+        if parts.count > 1 {
+            alert.informativeText = parts.dropFirst().joined(separator: "\n\n")
+        }
+        return alert
+    }
+
+    private func saveExport(data: String, suggestedName: String) {
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = suggestedName
+        panel.allowedContentTypes = [.json]
+        beginPanel()
+        let resp = panel.runModal()
+        endPanel()
+        guard resp == .OK, let url = panel.url else { return }
+        do {
+            try data.write(to: url, atomically: true, encoding: .utf8)
+        } catch {
+            NSLog("Focus: export write failed: \(error.localizedDescription)")
+        }
+    }
+
+    // File picker for <input type=file> (backup import). WKWebView silently
+    // ignores file-input clicks unless the UI delegate supplies a panel.
+    func webView(_ webView: WKWebView,
+                 runOpenPanelWith parameters: WKOpenPanelParameters,
+                 initiatedByFrame frame: WKFrameInfo,
+                 completionHandler: @escaping ([URL]?) -> Void) {
+        let panel = NSOpenPanel()
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = parameters.allowsMultipleSelection
+        beginPanel()
+        let resp = panel.runModal()
+        endPanel()
+        completionHandler(resp == .OK ? panel.urls : nil)
+    }
+
+    // JS alert()/confirm() are no-ops in WKWebView without these handlers.
+    func webView(_ webView: WKWebView,
+                 runJavaScriptAlertPanelWithMessage message: String,
+                 initiatedByFrame frame: WKFrameInfo,
+                 completionHandler: @escaping () -> Void) {
+        let alert = alert(fromJSMessage: message)
+        alert.addButton(withTitle: "OK")
+        beginPanel()
+        alert.runModal()
+        endPanel()
+        completionHandler()
+    }
+
+    func webView(_ webView: WKWebView,
+                 runJavaScriptConfirmPanelWithMessage message: String,
+                 initiatedByFrame frame: WKFrameInfo,
+                 completionHandler: @escaping (Bool) -> Void) {
+        let alert = alert(fromJSMessage: message)
+        alert.addButton(withTitle: "OK")
+        alert.addButton(withTitle: "Cancel")
+        beginPanel()
+        let resp = alert.runModal()
+        endPanel()
+        completionHandler(resp == .alertFirstButtonReturn)
     }
 
     // MARK: – HTML
@@ -159,10 +253,12 @@ class FocusWindow: NSObject, WKNavigationDelegate, WKScriptMessageHandler {
         }
 
         outsideClickMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
+            if self?.isPresentingPanel == true { return }
             self?.hide()
         }
 
         escapeMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            if self?.isPresentingPanel == true { return event }
             if event.keyCode == 53 {
                 self?.hide()
                 return nil

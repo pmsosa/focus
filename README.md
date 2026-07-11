@@ -14,8 +14,9 @@ focus. is a section-based to-do app inspired by the way a lot of people actually
 - **Sections**, not pipelines — one column per context (project, team, domain)
 - **Three-state tasks** — open → partial (with a "what's remaining" note) → done
 - **Subtasks** for when a task has moving parts
+- **Today & past-week panels** — pull tasks into a focused "today" list, then look back on the last 7 days of what you finished
 - **⌥ Space** to open and close from anywhere — no Dock icon, no context switch
-- All data is **saved automatically** via localStorage
+- **Fully local & private** — everything is saved on your machine (localStorage); no accounts, no network requests, no telemetry
 
 ---
 
@@ -67,11 +68,14 @@ Sources/Focus/
   FocusWindow.swift     floating panel + WKWebView
   GlobalHotkey.swift    ⌥ Space via Carbon API
   Resources/
-    index.html          all UI — HTML/CSS/JS with localStorage persistence
+    index.html          UI markup + panel layout
+    js/                 vanilla JS — state, storage, render, interactions, drag
+    styles/             CSS — base, layout, tasks, panels, settings, fonts
+    fonts/              self-hosted woff2 (SIL OFL) — no external font CDN
 build-app.sh            build script (unsigned / signed / MAS)
 ```
 
-The entire UI lives in a single `index.html` rendered inside a native `WKWebView`. There is no JavaScript framework or build step — just vanilla JS and CSS.
+The UI is vanilla HTML/CSS/JS rendered inside a native `WKWebView` — no JavaScript framework and no build step. Fonts are bundled locally, so the app makes no network requests and works fully offline.
 
 ---
 

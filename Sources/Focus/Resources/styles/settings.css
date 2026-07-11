@@ -255,7 +255,7 @@
 }
 .toast.fade-out { opacity: 0; }
 
-/* Dev log */
+/* Developer actions */
 .dev-log-actions {
   display: flex;
   gap: 6px;
@@ -278,36 +278,11 @@
   border-color: var(--border-light);
   color: var(--text);
 }
-
-.dev-log {
-  background: rgba(0, 0, 0, 0.45);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 8px 10px;
-  font-family: 'DM Mono', monospace;
-  font-size: 10px;
-  line-height: 1.65;
-  height: 200px;
-  overflow-y: auto;
-  white-space: pre-wrap;
-  word-break: break-all;
-  user-select: text;
-  -webkit-user-select: text;
-  cursor: text;
+.dev-action-btn.danger:hover {
+  border-color: #d46858;
+  color: #d46858;
 }
-[data-theme="terracotta-ceramics"] .dev-log {
-  background: rgba(0, 0, 0, 0.08);
+[data-theme="terracotta-ceramics"] .dev-action-btn.danger:hover {
+  border-color: #a83828;
+  color: #a83828;
 }
-.dev-log-entry { display: block; }
-.dev-log-entry.log   { color: #7ab878; }
-.dev-log-entry.info  { color: #78a8d4; }
-.dev-log-entry.warn  { color: #d4a840; }
-.dev-log-entry.error { color: #d46858; }
-.dev-log-empty {
-  color: rgba(120, 184, 120, 0.3);
-  font-style: italic;
-}
-[data-theme="terracotta-ceramics"] .dev-log-entry.log  { color: #486838; }
-[data-theme="terracotta-ceramics"] .dev-log-entry.info { color: #386898; }
-[data-theme="terracotta-ceramics"] .dev-log-entry.warn { color: #886820; }
-[data-theme="terracotta-ceramics"] .dev-log-entry.error { color: #a83828; }

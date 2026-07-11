@@ -35,66 +35,7 @@ function updateDate() {
 }
 updateDate();
 
-// ── Dev log ────────────────────────────────────────────────────────────
-const devLogs = [];
-const DEV_LOG_MAX = 300;
-
-(function interceptConsole() {
-  const methods = ['log', 'info', 'warn', 'error'];
-  methods.forEach(method => {
-    const orig = console[method].bind(console);
-    console[method] = (...args) => {
-      orig(...args);
-      const msg = args.map(a => {
-        try { return typeof a === 'object' ? JSON.stringify(a) : String(a); }
-        catch(e) { return String(a); }
-      }).join(' ');
-      devLogs.push({ level: method, msg, time: new Date().toLocaleTimeString('en', { hour12: false }) });
-      if (devLogs.length > DEV_LOG_MAX) devLogs.shift();
-      flushDevLog();
-    };
-  });
-  window.addEventListener('error', ev => {
-    devLogs.push({ level: 'error', msg: `${ev.message}  (${ev.filename}:${ev.lineno}:${ev.colno})`, time: new Date().toLocaleTimeString('en', { hour12: false }) });
-    if (devLogs.length > DEV_LOG_MAX) devLogs.shift();
-    flushDevLog();
-  });
-  window.addEventListener('unhandledrejection', ev => {
-    devLogs.push({ level: 'error', msg: `Unhandled rejection: ${ev.reason}`, time: new Date().toLocaleTimeString('en', { hour12: false }) });
-    if (devLogs.length > DEV_LOG_MAX) devLogs.shift();
-    flushDevLog();
-  });
-})();
-
-function flushDevLog() {
-  const el = document.getElementById('devLog');
-  if (!el) return;
-  if (devLogs.length === 0) {
-    el.innerHTML = '<span class="dev-log-empty">no logs yet…</span>';
-    return;
-  }
-  el.innerHTML = devLogs.map(({ level, msg, time }) =>
-    `<span class="dev-log-entry ${level}">[${time}] [${level.toUpperCase().padEnd(5)}] ${escHtml(msg)}</span>`
-  ).join('\n');
-  el.scrollTop = el.scrollHeight;
-}
-
-function clearDevLog() {
-  devLogs.length = 0;
-  flushDevLog();
-}
-
-function copyDevLog() {
-  const text = devLogs.map(({ level, msg, time }) =>
-    `[${time}] [${level.toUpperCase()}] ${msg}`
-  ).join('\n');
-  if (navigator.clipboard) {
-    navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
-  } else {
-    fallbackCopy(text);
-  }
-}
-
+// ── Clipboard fallback ─────────────────────────────────────────────────
 function fallbackCopy(text) {
   const ta = document.createElement('textarea');
   ta.value = text;

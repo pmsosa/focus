@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Focus</title>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Mono:wght@300;400;500&family=JetBrains+Mono:wght@300;400;500&family=IBM+Plex+Mono:wght@300;400;500&family=Space+Mono:wght@400;700&family=Fira+Code:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles/fonts.css">
 <link rel="stylesheet" href="styles/base.css">
 <link rel="stylesheet" href="styles/layout.css">
 <link rel="stylesheet" href="styles/tasks.css">
@@ -169,12 +169,9 @@
       <div class="settings-section-label">developer</div>
       <div class="dev-log-actions">
         <button class="dev-action-btn" onclick="openWebInspector()">web inspector</button>
-        <button class="dev-action-btn" onclick="copyDevLog()">copy all</button>
-        <button class="dev-action-btn" onclick="clearDevLog()">clear</button>
+        <button class="dev-action-btn danger" onclick="resetAllData()">clear all</button>
       </div>
-      <div class="dev-log" id="devLog">
-        <span class="dev-log-empty">no logs yet…</span>
-      </div>
+      <p class="settings-note">“Clear all” erases every section, task, and setting — a fresh start. This can't be undone.</p>
     </div>
 
   </div>
