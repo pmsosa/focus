@@ -165,6 +165,17 @@
     <div class="settings-divider"></div>
 
     <div class="settings-section">
+      <div class="settings-section-label">launch at login</div>
+      <div class="size-options">
+        <button class="size-option" id="loginOn" onclick="setLaunchAtLogin(true)">on</button>
+        <button class="size-option" id="loginOff" onclick="setLaunchAtLogin(false)">off</button>
+      </div>
+      <p class="settings-note">Start focus. automatically when you log in to your Mac.</p>
+    </div>
+
+    <div class="settings-divider"></div>
+
+    <div class="settings-section">
       <div class="settings-section-label">data</div>
       <div class="data-actions">
         <button class="data-btn export-btn" onclick="exportData()">↑ export backup</button>

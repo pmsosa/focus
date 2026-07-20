@@ -1,6 +1,7 @@
 import Cocoa
 import WebKit
 import UniformTypeIdentifiers
+import ServiceManagement
 
 private class KeyableWindow: NSWindow {
     override var canBecomeKey: Bool { true }
@@ -129,6 +130,41 @@ class FocusWindow: NSObject, WKNavigationDelegate, WKScriptMessageHandler, WKUID
                 self?.saveExport(data: data, suggestedName: name)
             }
         }
+
+        if type == "launchAtLogin", let enabled = body["enabled"] as? Bool {
+            DispatchQueue.main.async { [weak self] in
+                self?.setLaunchAtLogin(enabled)
+            }
+        }
+    }
+
+    // MARK: – Launch at login
+
+    // Register/unregister the app as a macOS login item via SMAppService
+    // (macOS 13+, no helper bundle required). After changing it, push the
+    // resolved status back to the UI so the toggle reflects reality.
+    private func setLaunchAtLogin(_ enabled: Bool) {
+        do {
+            if enabled {
+                if SMAppService.mainApp.status != .enabled {
+                    try SMAppService.mainApp.register()
+                }
+            } else {
+                if SMAppService.mainApp.status == .enabled {
+                    try SMAppService.mainApp.unregister()
+                }
+            }
+        } catch {
+            NSLog("Focus: launch-at-login \(enabled ? "register" : "unregister") failed: \(error.localizedDescription)")
+        }
+        syncLaunchAtLoginState()
+    }
+
+    // Tell the page the actual login-item state (source of truth is the OS, not
+    // localStorage — the user may toggle it in System Settings › Login Items).
+    private func syncLaunchAtLoginState() {
+        let on = SMAppService.mainApp.status == .enabled
+        webView.evaluateJavaScript("window.__setLaunchAtLoginState && window.__setLaunchAtLoginState(\(on));", completionHandler: nil)
     }
 
     private func applyWindowSize(_ sizeName: String) {
@@ -310,6 +346,11 @@ class FocusWindow: NSObject, WKNavigationDelegate, WKScriptMessageHandler, WKUID
             return
         }
         decisionHandler(.allow)
+    }
+
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        // Reflect the real login-item state into the freshly loaded page.
+        syncLaunchAtLoginState()
     }
 
     func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {

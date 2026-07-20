@@ -3,7 +3,7 @@
 // keyCode is a macOS virtual key code, modifiers is a Carbon modifier mask, and
 // label is the display string (e.g. "⌥ Space"). Default is ⌥ Space.
 const DEFAULT_HOTKEY = { keyCode: 49, modifiers: 2048, label: '⌥ Space' };
-let appSettings = { theme: 'terracotta-ceramics', font: 'DM Mono', fontSize: 13, windowSize: 'medium', inboxEnabled: false, hotkey: { ...DEFAULT_HOTKEY } };
+let appSettings = { theme: 'terracotta-ceramics', font: 'DM Mono', fontSize: 13, windowSize: 'medium', inboxEnabled: false, launchAtLogin: false, hotkey: { ...DEFAULT_HOTKEY } };
 
 function loadSettings() {
   try {
@@ -81,8 +81,30 @@ function updateSettingsUI() {
   });
   document.getElementById('inboxOn')?.classList.toggle('active', !!appSettings.inboxEnabled);
   document.getElementById('inboxOff')?.classList.toggle('active', !appSettings.inboxEnabled);
+  document.getElementById('loginOn')?.classList.toggle('active', !!appSettings.launchAtLogin);
+  document.getElementById('loginOff')?.classList.toggle('active', !appSettings.launchAtLogin);
   if (typeof updateHotkeyUI === 'function') updateHotkeyUI();
 }
+
+// ── Launch at login ────────────────────────────────────────────────────
+// The OS (SMAppService) is the source of truth. We ask the native side to
+// register/unregister; it calls back into __setLaunchAtLoginState with the
+// resolved status so the toggle always reflects reality (including changes
+// made in System Settings › Login Items).
+function setLaunchAtLogin(val) {
+  appSettings.launchAtLogin = val;   // optimistic; native callback confirms
+  updateSettingsUI();
+  try {
+    window.webkit.messageHandlers.focusBridge.postMessage({ type: 'launchAtLogin', enabled: val });
+  } catch(e) {}
+}
+
+// Invoked from Swift (evaluateJavaScript) with the actual login-item state.
+window.__setLaunchAtLoginState = function(on) {
+  appSettings.launchAtLogin = !!on;
+  saveSettings();
+  updateSettingsUI();
+};
 
 function setTheme(name) {
   appSettings.theme = name;
