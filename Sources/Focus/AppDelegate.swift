@@ -23,7 +23,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     /// The tangerine "ƒ" glyph used in the menu bar, loaded from the app bundle.
     private static func menuBarImage() -> NSImage? {
-        guard let url = Bundle.module.url(forResource: "Resources/menubar", withExtension: "png"),
+        guard let url = Bundle.focusResources.url(forResource: "Resources/menubar", withExtension: "png"),
               let image = NSImage(contentsOf: url) else {
             // Fall back to a system symbol if the asset is missing.
             return NSImage(systemSymbolName: "checkmark.square", accessibilityDescription: "Focus")

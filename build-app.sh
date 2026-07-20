@@ -62,7 +62,7 @@ while [ $# -gt 0 ]; do
   shift
 done
 
-BUNDLE_ID="com.focus.app"
+BUNDLE_ID="com.konukoii.focus"
 PRODUCT_NAME="Focus"
 VERSION_FILE="$(pwd)/VERSION"
 VERSION="$(cat "$VERSION_FILE" 2>/dev/null | tr -d '[:space:]')"
@@ -124,6 +124,11 @@ make_dmg() {
 make_entitlements() {
   local path="$1"
   local sandbox="$2"
+  # Optional 3rd arg: the App ID (<TEAM_ID>.<bundle-id>). When provided (MAS
+  # builds), inject the application-identifier / team-identifier entitlements.
+  # These must be signed into the bundle to match the provisioning profile,
+  # otherwise Transporter rejects the upload with error 90886.
+  local app_identifier="$3"
   mkdir -p "$(dirname "$path")"
   cat > "$path" << EOENT
 <?xml version="1.0" encoding="UTF-8"?>
@@ -131,6 +136,15 @@ make_entitlements() {
 <plist version="1.0">
 <dict>
 EOENT
+  if [ -n "$app_identifier" ]; then
+    local team_identifier="${app_identifier%%.*}"
+    cat >> "$path" << EOENT
+    <key>com.apple.application-identifier</key>
+    <string>$app_identifier</string>
+    <key>com.apple.developer.team-identifier</key>
+    <string>$team_identifier</string>
+EOENT
+  fi
   if [ "$sandbox" = true ]; then
     cat >> "$path" << 'EOENT'
     <key>com.apple.security.app-sandbox</key>
@@ -290,8 +304,8 @@ if [ "$MAS" = true ]; then
 
   ENTITLEMENTS="build/mas.entitlements"
   if [ ! -f "$ENTITLEMENTS" ]; then
-    echo "==> Generating $ENTITLEMENTS (sandbox + network)..."
-    make_entitlements "$ENTITLEMENTS" true
+    echo "==> Generating $ENTITLEMENTS (app-id + sandbox + network)..."
+    make_entitlements "$ENTITLEMENTS" true "$APPLE_TEAM_ID.$BUNDLE_ID"
     echo "    Review $ENTITLEMENTS before submitting."
   fi
 
@@ -314,11 +328,35 @@ if [ "$MAS" = true ]; then
     exit 1
   fi
 
+  # Strip extended attributes (notably com.apple.quarantine, which the browser
+  # stamps onto the downloaded provisioning profile). Any quarantine xattr in
+  # the bundle makes Transporter reject the upload (error 91109). Must run after
+  # assembling the bundle and before signing.
+  echo "==> Stripping extended attributes (quarantine, etc.)..."
+  xattr -cr "$APP"
+
   echo "==> Signing for Mac App Store as: $APP_SIGN_ID"
   codesign --deep --force \
     --sign "$APP_SIGN_ID" \
     --entitlements "$ENTITLEMENTS" \
     "$APP"
+
+  # Verify the signed bundle actually carries application-identifier /
+  # team-identifier. Without them Transporter rejects the upload (error 90886),
+  # so fail fast here instead of after a slow upload.
+  echo "==> Verifying signed entitlements..."
+  SIGNED_ENTS="$(codesign -d --entitlements :- "$APP" 2>/dev/null)"
+  EXPECTED_APP_ID="$APPLE_TEAM_ID.$BUNDLE_ID"
+  if ! echo "$SIGNED_ENTS" | grep -q "$EXPECTED_APP_ID"; then
+    echo "Error: signed bundle is missing application-identifier '$EXPECTED_APP_ID'."
+    echo "  This is exactly what triggers Transporter error 90886."
+    echo "  Delete build/mas.entitlements and re-run so it regenerates, and make"
+    echo "  sure APPLE_TEAM_ID matches your provisioning profile / Apple Distribution cert."
+    echo "  Signed entitlements were:"
+    echo "$SIGNED_ENTS" | sed 's/^/    /'
+    exit 1
+  fi
+  echo "    OK: application-identifier = $EXPECTED_APP_ID"
 
   PKG_PATH="$DIST/${PRODUCT_NAME}-${VERSION}.pkg"
   echo "==> Creating and signing MAS PKG as: $INSTALLER_SIGN_ID"

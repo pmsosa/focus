@@ -230,8 +230,9 @@ class FocusWindow: NSObject, WKNavigationDelegate, WKScriptMessageHandler, WKUID
     // MARK: – HTML
 
     private func loadHTML() {
-        guard let url = Bundle.module.url(forResource: "Resources/index", withExtension: "html") else {
-            NSLog("Focus: could not locate Resources/index.html in bundle \(Bundle.module.bundlePath)")
+        let bundle = Bundle.focusResources
+        guard let url = bundle.url(forResource: "Resources/index", withExtension: "html") else {
+            NSLog("Focus: could not locate Resources/index.html in bundle \(bundle.bundlePath)")
             return
         }
         // Grant read access to the *resolved* directory that actually contains
