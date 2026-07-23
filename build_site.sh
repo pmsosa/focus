@@ -53,7 +53,7 @@ cp -R "$RESOURCES/styles"  "$OUT/demo/styles"
 
 # The native app draws a blurred window behind the (93%-opaque) UI. In a browser
 # there is no blur layer, so give the demo a solid dark backdrop to match.
-DEMO_BG='<style>html,body{background:#0f0e0e;}</style>'
+DEMO_BG='<style>html{background:#0f0e0e;}</style>'
 # Insert the backdrop style just before </head> (portable in-place edit).
 tmp="$(mktemp)"
 awk -v ins="$DEMO_BG" '/<\/head>/ && !done { print ins; done=1 } { print }' \
